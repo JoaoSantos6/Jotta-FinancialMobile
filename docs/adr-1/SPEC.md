@@ -29,10 +29,15 @@ estratégia de teste deste ADR gira em torno de provar que isso não aconteceu.
 | `applicationId` = `com.jotta.financial` | `br.com.joaosantos.jotta`; `com.jottafinancial.app` | Decisão do usuário. Trava agora porque mudar depois da 1ª instalação com dado real apaga um banco irrecuperável |
 | Chave passada como **raw key hex**: `PRAGMA key = "x'<64 hex>'"` | Passar a chave como texto e deixar o SQLCipher rodar PBKDF2 por cima | A chave já tem 256 bits de entropia de CSPRNG. Derivar de novo custa tempo de abertura e não acrescenta segurança |
 | Prova do SEG-1 roda no **desktop**, na CI, com `libsqlcipher` do sistema | Emulador Android no pipeline | Decisão do usuário. Vale minutos por push em vez de 10-15 min e sem a fragilidade do emulador. O risco A2 do PRD é o preço |
-| Schema **v1 completo** na migração 1, com as 8 tabelas | Criar cada tabela no ADR que a consome | Migração é global e barata de fazer de uma vez; fatiar cria 6 migrações para chegar no mesmo lugar, cada uma com risco de perda de dados |
+| Schema **v1 completo** na migração 1, com as 10 tabelas | Criar cada tabela no ADR que a consome | Migração é global e barata de fazer de uma vez; fatiar cria 6 migrações para chegar no mesmo lugar, cada uma com risco de perda de dados |
 | Seed dos nichos no `onCreate` da migração, não em código de app | Semear na primeira abertura da Home | O seed é parte do schema: um banco sem os 7 nichos é um banco inválido, não um banco vazio |
 | `DatabaseKey` é um tipo próprio com `toString()` redigido | Passar a chave como `String` | `String` cru aparece em log, em mensagem de exceção e em `toString()` de objeto que a contenha. RNF-16 vira estrutural em vez de disciplina |
 | Trava de manifest lê o **APK construído** via `aapt2 dump`, não o XML-fonte | `grep` no `AndroidManifest.xml` do repositório | O fonte não vê o que o merge de dependências acrescentou. É exatamente o cenário do risco A4 |
+| `niches.icon` guarda **nome** de ícone Material Symbols (`home`, `directions_car`, …) | Emoji literal na coluna | Ícone nativo herda a cor do tema, escala com a fonte do sistema e o TalkBack lê o rótulo do nicho — o emoji faz o leitor dizer "veículo utilitário esportivo" |
+| Mapeamento nome → `IconData` por `const Map` na camada de apresentação | `IconData(codePoint)` construído a partir da string | `IconData` dinâmico **desliga o tree-shaking de ícones** do Flutter e obriga `--no-tree-shake-icons`, engordando o APK contra o RNF-5 |
+| `niches.color` são 7 valores ARGB fixos no seed | Derivar da paleta tonal do Material You | Paleta tonal é harmônica, não contrastante: os 7 nichos ficariam parecidos e a distribuição da Home perderia legibilidade. E a cor mudaria com o papel de parede |
+| Schema v1 ganha `description_norm`, `app_usage_days` e `error_log` | Deixar para uma v2 | O `onUpgrade` lança em vez de migrar; o que ficar fora hoje exige um mecanismo que ainda não existe. Decisão do usuário |
+| Medições da métrica M3 **não** são persistidas | Tabela própria para os tempos de lançamento | Fora por não-seleção do usuário. Se mudar de ideia, cabe em `app_settings` como JSON — que já existe no v1 e **não exige migração nenhuma** |
 | Banco em `getApplicationDocumentsDirectory()` (`path_provider`), diretório privado do app | Armazenamento externo/compartilhado | Arquivo cifrado em diretório compartilhado continua sendo um arquivo que outro app copia. A cifra protege o conteúdo; o diretório privado evita a cópia |
 | Regra de camadas verificada por teste que varre imports | Convenção documentada e revisão de PR | Convenção não roda na CI |
 
@@ -74,7 +79,8 @@ lib/
 │       ├── sqlcipher_loader.dart              [novo]   override de open por plataforma
 │       ├── database_location.dart            [novo]   caminho de jotta.db
 │       ├── providers.dart                    [novo]   databaseKeyStore, appDatabase
-│       ├── tables/*.dart                      [novo]   8 tabelas
+│       ├── normalize.dart                     [novo]   minúscula + sem acento (RF-14)
+│       ├── tables/*.dart                      [novo]   10 tabelas
 │       └── seed/niche_seed.dart               [novo]   as 7 linhas
 └── features/
     ├── overview/presentation/overview_page.dart   [novo]   vazia
@@ -94,6 +100,7 @@ test/
 │   └── keystore_database_key_store_test.dart  [novo]
 ├── core/database/
 │   ├── database_location_test.dart            [novo]
+│   ├── normalize_test.dart                    [novo]
 │   ├── sqlcipher_active_test.dart             [novo]   CA-2
 │   ├── encryption_at_rest_test.dart           [novo]   CA-3
 │   ├── schema_v1_test.dart                    [novo]   CA-5
@@ -121,22 +128,30 @@ o que é o ponto.
 
 ## 4. Modelo de dados
 
-Implementa **integralmente** a seção 5.3 do guarda-chuva. **Diff: nenhum.** As 8 tabelas
-e os 3 índices parciais são criados na migração 1; nenhuma coluna é adicionada,
+Implementa **integralmente** a seção 5.3 do guarda-chuva. **Diff: nenhum.** As 10
+tabelas e os 4 índices parciais são criados na migração 1; nenhuma coluna é adicionada,
 removida ou renomeada.
+
+> A seção 5.3 do guarda-chuva foi **emendada em 2026-09-05** para incluir
+> `description_norm`, `app_usage_days` e `error_log` — três coisas que requisitos já
+> aprovados (RF-14, RF-30, métricas M1 e M5) exigiam e que o schema não guardava. A
+> emenda aconteceu lá, não aqui: o ADR continua sem diff próprio contra o guarda-chuva,
+> que segue sendo a fonte única do modelo de dados.
 
 Mapeamento Drift (`lib/core/database/tables/`):
 
 | Tabela SQL | Classe Drift | Observação |
 |---|---|---|
 | `niches` | `Niches` | `id` textual semântico (`'casa'`), não UUID |
-| `transactions` | `Transactions` | `CHECK (amount_cents > 0)` via `customConstraints` |
+| `transactions` | `Transactions` | `CHECK (amount_cents > 0)` via `customConstraints`; `description_norm` para o RF-14 |
 | `income_sources` | `IncomeSources` | |
 | `investments` | `Investments` | |
 | `investment_balances` | `InvestmentBalances` | |
 | `debts` | `Debts` | |
 | `debt_installments` | `DebtInstallments` | `UNIQUE (debt_id, number)` |
 | `app_settings` | `AppSettings` | chave-valor textual |
+| `app_usage_days` | `AppUsageDays` | métrica M1; `day` é a PK, o que torna a contagem idempotente |
+| `error_log` | `ErrorLog` | métrica M5; sem coluna para valor, descrição ou credor, por construção |
 
 Convenções, fixadas aqui e válidas para todos os ADRs seguintes:
 
@@ -287,15 +302,23 @@ Nenhum DAO é declarado neste ADR.
 const List<NichesCompanion> kNicheSeed = [...];
 ```
 
-| id | nome | kind | sort_order |
-|---|---|---|---|
-| `casa` | Casa | `expense` | 1 |
-| `transporte` | Transporte | `expense` | 2 |
-| `alimentacao` | Alimentação | `expense` | 3 |
-| `saude` | Saúde | `expense` | 4 |
-| `lazer` | Lazer | `expense` | 5 |
-| `investimentos` | Investimentos | `investment` | 6 |
-| `dividas` | Dívidas | `debt` | 7 |
+| id | nome | icon | color | kind | sort_order |
+|---|---|---|---|---|---|
+| `casa` | Casa | `home` | `0xFFE07A1F` âmbar | `expense` | 1 |
+| `transporte` | Transporte | `directions_car` | `0xFF1E6FD9` azul | `expense` | 2 |
+| `alimentacao` | Alimentação | `restaurant` | `0xFF2E8B4A` verde | `expense` | 3 |
+| `saude` | Saúde | `medical_services` | `0xFFD32F4B` vermelho | `expense` | 4 |
+| `lazer` | Lazer | `movie` | `0xFF7B4DBF` roxo | `expense` | 5 |
+| `investimentos` | Investimentos | `trending_up` | `0xFF0F8C8C` teal | `investment` | 6 |
+| `dividas` | Dívidas | `credit_card` | `0xFF5A6472` ardósia | `debt` | 7 |
+
+As sete cores foram escolhidas para serem distinguíveis entre si na distribuição da Home
+e manterem contraste AA sobre as superfícies clara e escura do Material 3. Elas são
+**dados**, não código: trocar uma é editar o seed, e no banco já existente é um `UPDATE`.
+
+O `icon` é resolvido por um `const Map<String, IconData>` na camada de apresentação — o
+mapa é obrigatório, não conveniência: construir `IconData` a partir da string em tempo de
+execução desliga o tree-shaking de ícones do Flutter e infla o APK contra o RNF-5.
 
 O seed é idempotente (`InsertMode.insertOrIgnore`), para que uma futura migração possa
 reexecutá-lo sem duplicar.
@@ -427,10 +450,10 @@ Toda linha desta tabela vira a validação de pelo menos uma task no `TASK.md`.
 | V-16 | Reabrir **sem** chave falha (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
 | V-17 | Reabrir com chave **errada** falha (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
 | V-18 | Descrição-marcador gravada **não** aparece nos bytes do arquivo (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
-| V-19 | Banco novo tem as 8 tabelas e `schemaVersion == 1` | integração | `test/core/database/schema_v1_test.dart` |
+| V-19 | Banco novo tem as 10 tabelas e `schemaVersion == 1` | integração | `test/core/database/schema_v1_test.dart` |
 | V-20 | `CHECK (amount_cents > 0)` rejeita 0 e negativo | integração | `test/core/database/schema_v1_test.dart` |
 | V-21 | `UNIQUE (debt_id, number)` rejeita parcela duplicada | integração | `test/core/database/schema_v1_test.dart` |
-| V-22 | Os 3 índices existem e são parciais (`WHERE deleted_at IS NULL`) | integração | `test/core/database/schema_v1_test.dart` |
+| V-22 | Os 4 índices existem e são parciais (`WHERE deleted_at IS NULL`) | integração | `test/core/database/schema_v1_test.dart` |
 | V-23 | `PRAGMA foreign_keys` está ON após `beforeOpen` | integração | `test/core/database/schema_v1_test.dart` |
 | V-24 | `onUpgrade` de v1 para v2 lança em vez de aceitar em silêncio | integração | `test/core/database/schema_v1_test.dart` |
 | V-25 | `sqlite_master` bate com o golden `test/fixtures/schema_v1.sql` | golden | `test/core/database/schema_snapshot_test.dart` |
@@ -453,6 +476,10 @@ Toda linha desta tabela vira a validação de pelo menos uma task no `TASK.md`.
 | V-42 | `appDatabaseProvider` pede a chave ao store e abre o banco com ela | unidade | `test/app/providers_test.dart` |
 | V-43 | O caminho do banco cai no diretório privado do app e termina em `jotta.db` | unidade | `test/core/database/database_location_test.dart` |
 | V-44 | `debugPrint` é no-op quando `isRelease` é true, e emite quando é false | unidade | `test/app/logging_test.dart` |
+| V-45 | "Açúcar" normaliza para "acucar"; descrição nula produz `description_norm` nula | integração | `test/core/database/normalize_test.dart` |
+| V-46 | `idx_tx_search` existe, é parcial, e `LIKE '%acucar%'` encontra "Açúcar" | integração | `test/core/database/schema_v1_test.dart` |
+| V-47 | `app_usage_days` não duplica o mesmo dia e aceita dias distintos | integração | `test/core/database/schema_v1_test.dart` |
+| V-48 | `error_log` tem exatamente 5 colunas — falha se surgir coluna de valor, descrição ou credor | integração | `test/core/database/schema_v1_test.dart` |
 
 Cobertura mínima da seção 5.8 do guarda-chuva (90% domínio / 80% integração) **não se
 aplica a este ADR**: não há camada de domínio ainda. A trava de cobertura entra no
@@ -478,23 +505,25 @@ O que alguém razoável esperaria encontrar aqui e não vai:
 | SEG-1 | `database_key.dart`, `keystore_database_key_store.dart`, `open_encrypted_database.dart`, `sqlcipher_loader.dart`, `database_location.dart` | V-06 a V-18, V-43 |
 | SEG-4 | `AndroidManifest.xml`, `res/xml/data_extraction_rules.xml`, `backup_rules.xml` | V-02, V-03, V-36 |
 | SEG-5 | `AndroidManifest.xml`, `pubspec.yaml` | V-02, V-35, V-37 |
-| SEG-6 (parcial) | `app/logging.dart`, `tool/ci/check_logs.sh` | V-44, V-38 |
+| SEG-6 (parcial) | `app/logging.dart`, `tool/ci/check_logs.sh`, schema do `error_log` | V-44, V-38, V-48 |
 | SEG-8 (parcial) | `DatabaseKeyStore.destroy()` | V-11 |
 | RNF-1 | `android/app/build.gradle.kts` | V-01 |
 | RNF-6 | `AndroidManifest.xml` | V-02, V-35, V-37 |
 | RNF-14 (parcial) | `tool/ci/check_manifest.sh`, `tool/ci/check_logs.sh` | V-35, V-36, V-37, V-38 |
 | RNF-16 | `DatabaseKey.toString()`, `tool/ci/check_logs.sh` | V-07, V-39 |
 | RNF-9 (parcial) | `MigrationStrategy` | V-24 |
+| RF-14 (parcial) | `description_norm`, `normalize.dart`, `idx_tx_search` — a tela de busca é do ADR-2 | V-45, V-46 |
+| RF-30 (parcial) | `app_usage_days`, `error_log` — a tela "Meu uso" é do M5 | V-47, V-48 |
 | CA-1 | shell, rotas, telas vazias | V-32, V-33, V-34 — **e o checklist manual** (`TASK.md`, pronto item 5): instalar o APK em aparelho não é coisa que teste de widget prove |
 | CA-2 | `open_encrypted_database.dart` | V-13, V-14 |
 | CA-3 | `open_encrypted_database.dart` | V-16, V-17, V-18 |
 | CA-4 | `keystore_database_key_store.dart` | V-09, V-12, V-07 |
-| CA-5 | migração 1 + seed | V-19 a V-28 |
+| CA-5 | migração 1 + seed | V-19 a V-28, V-45 a V-48 |
 | CA-6 | manifest + `res/xml/` | V-35, V-36 |
 | CA-7 | workflow + scripts | V-35 a V-39 |
 | CA-8 | `test/architecture/layering_test.dart` | V-05 |
 
-**Cobertura: 10 requisitos rastreados, 10 com teste nomeado. 8 critérios de aceite,
+**Cobertura: 12 requisitos rastreados, 12 com teste nomeado. 8 critérios de aceite,
 8 rastreados** — sendo que metade do CA-1 é prova humana, não automatizada.
 
 A seção 4 do PRD lista **11** requisitos. O 11º é o RNF-11, marcado ali como **Fora**

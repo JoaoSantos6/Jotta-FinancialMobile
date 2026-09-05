@@ -285,7 +285,12 @@ Barras dos últimos 6 períodos da mesma granularidade (6 semanas, 6 meses ou 6 
 para ver tendência do nicho sem sair da tela.
 
 **RF-14 · Busca**
-Campo de busca por descrição dentro do nicho, ignorando acentos e caixa.
+Campo de busca por descrição dentro do nicho, ignorando acentos e caixa. A busca roda
+sobre `transactions.description_norm`, não sobre `description`: o `LIKE` do SQLite não
+faz *accent folding*, então a normalização é gravada junto com o lançamento.
+
+> Aceite: Dado um gasto descrito como "Açúcar", quando busco por "acucar" ou "AÇÚCAR",
+> então o lançamento aparece.
 
 ### 4.4 Tela de Renda
 
@@ -501,6 +506,7 @@ CREATE TABLE transactions (
   amount_cents        INTEGER NOT NULL CHECK (amount_cents > 0),
   occurred_on         TEXT NOT NULL,       -- 'YYYY-MM-DD'
   description         TEXT,
+  description_norm    TEXT,                -- description em minúscula e sem acento (RF-14)
   payment_method      TEXT,                -- 'debit'|'credit'|'pix'|'cash'|NULL
   niche_id            TEXT REFERENCES niches(id),
   income_source_id    TEXT REFERENCES income_sources(id),
@@ -516,6 +522,7 @@ CREATE TABLE transactions (
 CREATE INDEX idx_tx_period  ON transactions(occurred_on) WHERE deleted_at IS NULL;
 CREATE INDEX idx_tx_niche   ON transactions(niche_id, occurred_on) WHERE deleted_at IS NULL;
 CREATE INDEX idx_tx_kind    ON transactions(kind, occurred_on) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tx_search  ON transactions(niche_id, description_norm) WHERE deleted_at IS NULL;
 
 CREATE TABLE income_sources (
   id             TEXT PRIMARY KEY,
@@ -572,10 +579,28 @@ CREATE TABLE app_settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+-- Métrica M1: um dia com sessão = uma linha. A PK impede contar o mesmo dia duas vezes.
+CREATE TABLE app_usage_days (
+  day TEXT PRIMARY KEY                     -- 'YYYY-MM-DD', hora local
+);
+
+-- Métrica M5. Guarda o que aconteceu, nunca o dado que causou (SEG-6): não há
+-- coluna para valor, descrição ou nome de credor, e isso é a garantia estrutural.
+CREATE TABLE error_log (
+  id          TEXT PRIMARY KEY,
+  occurred_at TEXT NOT NULL,               -- ISO 8601 local
+  type        TEXT NOT NULL,               -- nome da exceção
+  screen      TEXT,                        -- rota onde ocorreu
+  stack       TEXT NOT NULL
+);
 ```
 
 **Invariantes de integridade** (validadas no domínio, não só no banco):
 
+- `description_norm` é sempre derivada de `description` na camada de dados: minúscula,
+  sem acento, `NULL` quando a descrição é `NULL`. Nunca é escrita à mão nem editada
+  isoladamente — divergência entre as duas é bug, não estado válido.
 - `kind = 'expense'` ⇒ `niche_id` obrigatório e o nicho é de `kind = 'expense'`.
 - `kind = 'income'` ⇒ `niche_id` nulo.
 - `kind IN ('investment_in','investment_out')` ⇒ `investment_id` obrigatório.

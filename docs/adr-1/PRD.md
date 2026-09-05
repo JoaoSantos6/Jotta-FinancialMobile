@@ -6,7 +6,7 @@
 | Marco | **M0** do roadmap (seção 8 do [PRD guarda-chuva](../PRD-MVP.md)) |
 | Versão | 1.0 |
 | Data | 2026-09-05 |
-| Status | **Bloqueado** — 2 aberturas na seção 8, abertas pela auditoria de 2026-09-05 |
+| Status | Aprovado — v1.1, após a auditoria de 2026-09-05 |
 | Estimativa | 1,5 semana (um desenvolvedor) |
 | Depende de | nada |
 
@@ -50,7 +50,9 @@ migrado, injeção de dependência de pé, rotas e tema decididos.
 - Banco Drift **sobre SQLCipher**, com prova automatizada de que a cifra está ativa.
 - Chave de 32 bytes gerada por CSPRNG e guardada no Android Keystore.
 - **Schema v1 completo** — todas as tabelas da seção 5.3 do guarda-chuva, criadas na
-  migração 1. Os DAOs e as queries ficam para os ADRs que os consomem.
+  migração 1, incluindo o que a auditoria mostrou faltar: `description_norm` para a
+  busca sem acento (RF-14), `app_usage_days` e `error_log` para as métricas M1 e M5.
+  Os DAOs e as queries ficam para os ADRs que os consomem.
 - Seed fixo dos 7 nichos.
 - `AndroidManifest.xml` sem nenhuma permissão, com `allowBackup="false"` e regras de
   extração negando cloud e device-transfer.
@@ -92,6 +94,8 @@ Referências ao [PRD guarda-chuva](../PRD-MVP.md). Nenhum requisito novo é cria
 | RNF-6 | Nenhuma permissão declarada | **Total** |
 | RNF-14 | CI reprova manifest com `INTERNET` ou `allowBackup ≠ false` | **Parcial** — a lista numerada de travas está na seção **5.9** do guarda-chuva, não no texto do RNF-14 (seção 6.5), que tem três condições. Entram os itens 1, 2 e 4 da 5.9; o item 3 (ofuscação) é do M6 |
 | RNF-16 | Chave nunca em log, backup ou preferências em claro | **Total** — inclui o `grep` de CI |
+| RF-14 | Busca por descrição ignorando acento e caixa | **Parcial** — a coluna `description_norm`, a normalização e o índice entram agora; a tela de busca é do ADR-2 |
+| RF-30 | Tela "Meu uso" com as métricas M1–M6 | **Parcial** — `app_usage_days` e `error_log` existem e ficam vazias; quem as preenche e a tela são do M5 |
 | RNF-9 | Zero perda em atualização de versão | **Quase nada** — o que existe é um `onUpgrade` que se **recusa** a migrar (V-24). O backup interno automático antes de cada migração, que o SEG-7 exige e é o mecanismo que o RNF-9 nomeia, está inteiramente por fazer |
 | RNF-11 | Overhead do SQLCipher < 15% | **Fora** — precisa da query agregada da Home (M2) e de 10.000 transações para medir. Fica no ADR-3 |
 
@@ -133,9 +137,10 @@ universal que nenhum teste desta fatia verifica, e um aceite que ninguém conseg
 honestamente não é aceite.
 
 **CA-5 — O schema v1 está completo e semeado.**
-Dado um banco novo, quando ele termina de subir, então existem as 8 tabelas da seção
-5.3, os 3 índices parciais, e exatamente 7 nichos semeados — 5 de gasto, 1 de
-investimento e 1 de dívida — e rodar o seed uma segunda vez não duplica nada.
+Dado um banco novo, quando ele termina de subir, então existem as 10 tabelas da seção
+5.3, os 4 índices parciais, e exatamente 7 nichos semeados — 5 de gasto, 1 de
+investimento e 1 de dívida, todos com ícone e cor — e rodar o seed uma segunda vez não
+duplica nada.
 
 **CA-6 — O manifest não pede nada.**
 Dado o APK construído, quando se inspeciona o manifest **merged** dentro dele, então
@@ -176,40 +181,32 @@ começar antes do `adr-1/TASK.md` estar fechado.
 ## 8. Aberturas
 
 Três foram fechadas em 2026-09-05, antes de a spec ser escrita: `applicationId`,
-estratégia de prova do SEG-1 na CI e escopo de tela do M0. Estão em `DECISIONS.md`.
+estratégia de prova do SEG-1 na CI e escopo de tela do M0.
 
-Duas foram **abertas pela auditoria** do mesmo dia, e bloqueiam a implementação:
+Duas foram abertas pela auditoria do `/judge` no mesmo dia e **fechadas na sequência**:
 
-**AB-1 · Ícones e cores dos 7 nichos.**
-`niches.icon` e `niches.color` são `NOT NULL` (seção 5.3 do guarda-chuva). O seed é a
-T-29, dentro desta fatia, e a T-28 congela o resultado num golden. Sem 7 ícones e 7
-cores decididos, a T-29 não é implementável.
+- **AB-1 · Ícones e cores dos 7 nichos** — resolvida. `icon` guarda nome de ícone
+  Material Symbols; `color` são 7 valores ARGB fixos, escolhidos para se distinguirem
+  entre si e manterem contraste AA nos dois temas. Tabela completa na SPEC, §5.6.
+- **AB-2 · O que entra no schema v1** — resolvida. O `onUpgrade` continua se recusando a
+  migrar, e por isso o v1 nasce com tudo que os requisitos aprovados exigem: coluna
+  `description_norm` (RF-14), `app_usage_days` (métrica M1) e `error_log` (métrica M5).
 
-> A versão anterior desta seção afirmava que identidade visual "não bloqueia este ADR".
-> Estava errado, e o erro tinha uma causa: eu tratei "identidade visual" como assunto de
-> Play Store, sem ligar ao fato de que o schema exige as duas colunas.
+**Fora por não-seleção:** persistir as medições da **métrica M3** (tempo do FAB até
+salvar). Ela era a quarta opção da mesma pergunta e não foi marcada.
 
-**AB-2 · O que entra no schema v1.**
-A migração 1 é congelada por golden (T-28) e o `onUpgrade` foi escrito para **lançar**
-em vez de migrar. Nessa combinação, tudo que ficar de fora vira uma v2 obrigatória num
-mecanismo que se recusa a rodar. Três coisas que o guarda-chuva exige e o schema atual
-não guarda:
+> A consequência, dita sem rodeio: a mediana passa a refletir só a sessão atual, e a M3
+> é um dos três critérios de "MVP bem-sucedido" — o único que o PRD trata como portão
+> (*"Nenhuma feature nova entra antes de M3 estar verde"*, seção 2 do guarda-chuva).
+> Medi-la sobre uma sessão não é medi-la.
+>
+> O que torna essa não-seleção barata, e por isso aceitável: `app_settings` é
+> chave-valor e **já existe no v1**. Guardar ali as últimas 50 medições como JSON não
+> precisa de migração nenhuma — é a única das quatro que escapa da armadilha do
+> `onUpgrade`. Se mudar de ideia até o M5, o custo é uma task, não uma v2.
 
-- **RF-14** — busca por descrição "ignorando acentos e caixa". A coluna é `description
-  TEXT` pura, e `LIKE` do SQLite não faz *accent folding*.
-- **RF-30 / métricas M1 e M5** — a tela "Meu uso" exibe contagem de dias com sessão e um
-  log local de exceções. Não há tabela para nenhum dos dois.
-- **Métrica M3** — a mediana das últimas 50 medições de tempo de lançamento é descrita
-  como "timer em memória", que não sobrevive à sessão, mas é critério de gate do MVP.
+**Seguem em aberto no projeto e não bloqueiam esta fatia** — todas caem no M5 ou depois:
+`FLAG_SECURE`, export CSV em texto plano, recorrência automática vs. sugerida, nome
+público do app.
 
-Cada um dos três tem três saídas: entra no v1 agora, entra numa v2 planejada (e aí o
-`onUpgrade` precisa saber migrar), ou o requisito correspondente cai. É decisão de
-produto, não técnica.
-
-**Seguem em aberto no projeto e realmente não bloqueiam esta fatia** — todas caem no M5
-ou depois: `FLAG_SECURE`, export CSV em texto plano, recorrência automática vs. sugerida,
-nome público do app.
-
-⛔ **A SPEC e a TASK já existem** e cobrem tudo que não depende de AB-1 e AB-2. A
-implementação da T-28, da T-29 e das tabelas afetadas fica bloqueada até as duas serem
-respondidas — as outras 45 tasks não dependem delas.
+➡️ **SPEC e TASK liberadas.** Nenhuma abertura bloqueia a implementação.

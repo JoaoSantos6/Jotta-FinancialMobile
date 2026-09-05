@@ -13,7 +13,7 @@ backend, sem rede — o app não declara nem a permissão `INTERNET`.
 |---|---|
 | [`docs/PRD-MVP.md`](docs/PRD-MVP.md) | PRD completo do MVP — visão de produto, requisitos funcionais com critérios de aceite, arquitetura, modelo de dados, roadmap e riscos |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Registro de decisões: o que foi decidido, o que foi descartado e quem decidiu |
-| [`docs/adr-1/`](docs/adr-1/) | **ADR-1 — Fundação segura** (marco M0): [PRD](docs/adr-1/PRD.md) · [SPEC](docs/adr-1/SPEC.md) · [TASK](docs/adr-1/TASK.md) — 48 tasks, cada uma com seu teste. **Bloqueado** em 2 aberturas abertas pela auditoria do `/judge` |
+| [`docs/adr-1/`](docs/adr-1/) | **ADR-1 — Fundação segura** (marco M0): [PRD](docs/adr-1/PRD.md) · [SPEC](docs/adr-1/SPEC.md) · [TASK](docs/adr-1/TASK.md) — 51 tasks, cada uma com seu teste. Auditado pelo `/judge` e corrigido |
 | `docs/adr-N/` | Demais fatias de entrega, mesmo formato — ver abaixo |
 
 ## Stack
@@ -42,14 +42,14 @@ Detalhes, modelo de ameaças e testes: **seção 6 do PRD**.
 ## Estado
 
 📋 Fase de especificação. Nenhum código ainda. O **[`adr-1`](docs/adr-1/)** (marco M0)
-está documentado de ponta a ponta — PRD, spec técnica e 48 tasks numeradas: projeto
+está documentado de ponta a ponta — PRD, spec técnica e 51 tasks numeradas: projeto
 Flutter, banco cifrado, chave no Keystore, casca navegável e CI com as travas de
 segurança.
 
-Ele passou pelo `/judge` e voltou **VIÁVEL COM RESSALVAS**. As correções factuais já
-foram aplicadas; duas aberturas de produto continuam bloqueando parte da implementação
-— ícones e cores dos nichos, e o que entra no schema v1. Estão na seção 8 do
-[PRD do ADR-1](docs/adr-1/PRD.md).
+Ele passou pelo `/judge`, voltou **VIÁVEL COM RESSALVAS**, e as ressalvas foram
+tratadas: correções factuais aplicadas e as duas aberturas de produto fechadas. O
+schema v1 cresceu de 8 para 10 tabelas no processo — a auditoria mostrou que requisitos
+já aprovados exigiam dados que o modelo não guardava.
 
 ## Como uma solução vira código
 
