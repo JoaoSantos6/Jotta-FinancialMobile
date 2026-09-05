@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEG-4 — nega explicitamente os dois canais de backup automático do Android
+  (API 31+). O banco já é cifrado (SEG-1), mas isso sozinho não impede o Google
+  de subir o arquivo para o Drive: allowBackup="false" no manifest cobre o app
+  inteiro, e esta regra é a segunda trava, específica dos dois canais.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+    </device-transfer>
+</data-extraction-rules>

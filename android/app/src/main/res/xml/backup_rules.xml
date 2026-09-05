@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEG-4 — equivalente de data_extraction_rules.xml para API < 31, que não conhece
+  data-extraction-rules. Vazio de propósito: nada deve entrar no backup legado do
+  Android (Auto Backup pré-API-31), o mesmo espírito de allowBackup="false".
+-->
+<full-backup-content>
+</full-backup-content>
