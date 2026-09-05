@@ -1,0 +1,9 @@
+# Pasta intencionalmente vazia no ADR-1 (docs/adr-1/SPEC.md, §3).
+#
+# Regra de dependência: presentation -> domain <- data. domain nunca importa
+# Flutter nem Drift (guarda-chuva §5.2). O ADR-1 constrói a fundação (banco, chave,
+# navegação); regra de negócio e casos de uso chegam a partir do ADR-2.
+#
+# test/architecture/layering_test.dart varre esta pasta a cada `flutter test` e
+# reprova qualquer arquivo .dart aqui que importe package:flutter ou package:drift
+# — mesmo vazia, a trava já está ativa.
