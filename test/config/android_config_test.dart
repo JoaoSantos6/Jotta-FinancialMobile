@@ -12,15 +12,11 @@ void main() {
     late String gradle;
 
     setUpAll(() {
-      gradle = File(
-        'android/app/build.gradle.kts',
-      ).readAsStringSync();
+      gradle = File('android/app/build.gradle.kts').readAsStringSync();
     });
 
     String valueOf(String key) {
-      final match = RegExp(
-        '$key\\s*=\\s*"([^"]+)"',
-      ).firstMatch(gradle);
+      final match = RegExp('$key\\s*=\\s*"([^"]+)"').firstMatch(gradle);
       expect(
         match,
         isNotNull,

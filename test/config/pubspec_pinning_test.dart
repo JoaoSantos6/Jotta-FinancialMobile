@@ -30,7 +30,9 @@ bool _isExactPin(String value) {
   // intervalo (<, >, um espaço separando dois limites).
   final trimmed = value.trim();
   if (trimmed.isEmpty || trimmed == 'any') return false;
-  if (trimmed.startsWith('^') || trimmed.contains('<') || trimmed.contains('>')) {
+  if (trimmed.startsWith('^') ||
+      trimmed.contains('<') ||
+      trimmed.contains('>')) {
     return false;
   }
   return RegExp(r'^\d+\.\d+\.\d+').hasMatch(trimmed);
@@ -51,7 +53,8 @@ void main() {
       expect(
         value,
         isNotNull,
-        reason: 'dependência sensível "$name" não está declarada em pubspec.yaml',
+        reason:
+            'dependência sensível "$name" não está declarada em pubspec.yaml',
       );
       if (value is! String || !_isExactPin(value)) {
         failures.add('$name: "$value"');
@@ -71,20 +74,23 @@ void main() {
     expect(File('pubspec.lock').existsSync(), isTrue);
   });
 
-  test('hook do sqlite3 está configurado para sqlcipher (docs/DECISIONS.md)', () {
-    final pubspec =
-        loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
-    final hooks = pubspec['hooks'] as YamlMap?;
-    final userDefines = hooks?['user_defines'] as YamlMap?;
-    final sqlite3Define = userDefines?['sqlite3'] as YamlMap?;
-    expect(
-      sqlite3Define?['source'],
-      'sqlcipher',
-      reason:
-          'sqlcipher_flutter_libs está EOL — o binário SQLCipher vem do hook '
-          'do próprio sqlite3, não de um plugin separado',
-    );
-  });
+  test(
+    'hook do sqlite3 está configurado para sqlcipher (docs/DECISIONS.md)',
+    () {
+      final pubspec =
+          loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
+      final hooks = pubspec['hooks'] as YamlMap?;
+      final userDefines = hooks?['user_defines'] as YamlMap?;
+      final sqlite3Define = userDefines?['sqlite3'] as YamlMap?;
+      expect(
+        sqlite3Define?['source'],
+        'sqlcipher',
+        reason:
+            'sqlcipher_flutter_libs está EOL — o binário SQLCipher vem do hook '
+            'do próprio sqlite3, não de um plugin separado',
+      );
+    },
+  );
 
   test('sqlcipher_flutter_libs (EOL) não é dependência', () {
     final pubspec =

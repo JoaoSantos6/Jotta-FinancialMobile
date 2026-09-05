@@ -44,17 +44,20 @@ void main() {
 
     setUpAll(() {
       doc = XmlDocument.parse(
-        File(
-          'android/app/src/main/res/xml/data_extraction_rules.xml',
-        ).readAsStringSync(),
+        File('android/app/src/main/res/xml/data_extraction_rules.xml')
+            .readAsStringSync(),
       );
     });
 
     test('nega cloud-backup', () {
       final cloudBackup = doc.findAllElements('cloud-backup').single;
-      final excludeAll = cloudBackup.findElements('exclude').where(
-        (e) => e.getAttribute('domain') == 'root' && e.getAttribute('path') == '.',
-      );
+      final excludeAll = cloudBackup
+          .findElements('exclude')
+          .where(
+            (e) =>
+                e.getAttribute('domain') == 'root' &&
+                e.getAttribute('path') == '.',
+          );
       expect(
         excludeAll,
         isNotEmpty,
@@ -64,9 +67,13 @@ void main() {
 
     test('nega device-transfer', () {
       final deviceTransfer = doc.findAllElements('device-transfer').single;
-      final excludeAll = deviceTransfer.findElements('exclude').where(
-        (e) => e.getAttribute('domain') == 'root' && e.getAttribute('path') == '.',
-      );
+      final excludeAll = deviceTransfer
+          .findElements('exclude')
+          .where(
+            (e) =>
+                e.getAttribute('domain') == 'root' &&
+                e.getAttribute('path') == '.',
+          );
       expect(
         excludeAll,
         isNotEmpty,
@@ -78,9 +85,8 @@ void main() {
   group('res/xml/backup_rules.xml (T-03)', () {
     test('existe e está vazio (fullBackupContent para API < 31)', () {
       final doc = XmlDocument.parse(
-        File(
-          'android/app/src/main/res/xml/backup_rules.xml',
-        ).readAsStringSync(),
+        File('android/app/src/main/res/xml/backup_rules.xml')
+            .readAsStringSync(),
       );
       final root = doc.rootElement;
       expect(root.name.local, 'full-backup-content');
