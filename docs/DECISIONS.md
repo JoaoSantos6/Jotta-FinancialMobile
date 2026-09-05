@@ -35,8 +35,22 @@ perguntada e respondida. Alterar uma linha significa reabrir o PRD.
 | 2026-09-05 | Chave do SQLCipher passada como **raw key hex** (`PRAGMA key = x'…'`), sem KDF por cima | Passar a chave como texto e deixar o SQLCipher rodar PBKDF2 | Claude (a chave já tem 256 bits de CSPRNG; derivar de novo só custa tempo de abertura) |
 | 2026-09-05 | Schema **v1 completo** (as 8 tabelas) na migração 1, no ADR-1; DAOs ficam nos ADRs que os consomem | Criar cada tabela no ADR que a usa | Claude (fatiar geraria 6 migrações para chegar ao mesmo lugar, cada uma com risco de perda de dados) |
 | 2026-09-05 | Travas de manifest na CI leem o **APK construído** (`aapt2 dump`), não o XML-fonte | `grep` no `AndroidManifest.xml` do repositório | Claude (o fonte não enxerga o que o merge de dependências acrescentou) |
+| 2026-09-05 | Banco em `getApplicationDocumentsDirectory()` (diretório privado do app), via `path_provider` | Armazenamento externo/compartilhado | Claude (a cifra protege o conteúdo, não impede a cópia; arquivo cifrado copiado vira ataque offline com tempo ilimitado) |
+| 2026-09-05 | Na CI, `libsqlcipher` é instalado **antes** do job da suíte completa, e o build do APK vem **antes** das travas de manifest | Ordem original da seção 5.9 (travas antes do build) | Claude (correção de achado do `/judge`: manifest merged só existe depois do APK; e a suíte sem a lib reprovaria) |
+| 2026-09-05 | `debugPrint` no-op recebe `installLogging({required bool isRelease})` em vez de ler `kReleaseMode` direto | Ler `kReleaseMode` na função | Claude (`kReleaseMode` é `const` e não alterna na suíte; sem a costura, metade do SEG-6 ficaria sem prova automatizada) |
 
 ## Em aberto (perguntar antes de implementar)
+
+**Bloqueiam o ADR-1** (abertas pela auditoria do `/judge` em 2026-09-05):
+
+- **AB-1** — ícones e cores dos 7 nichos. `niches.icon` e `niches.color` são `NOT NULL`,
+  o seed é a T-29 e a T-28 congela o resultado num golden.
+- **AB-2** — o que entra no schema v1: busca sem acento (RF-14), log de exceções e
+  contador de sessão (RF-30 / métricas M1 e M5), persistência da mediana da métrica M3.
+  O `onUpgrade` foi escrito para lançar, então o que ficar de fora exige uma v2 que o
+  mecanismo atual se recusa a rodar.
+
+**Não bloqueiam o ADR-1:**
 
 - Comportamento do app na virada de mês para lançamentos recorrentes: gerar automático ou sugerir?
 - Ícone/identidade visual e nome público do app na Play Store.

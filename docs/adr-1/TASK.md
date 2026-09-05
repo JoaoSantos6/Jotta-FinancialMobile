@@ -5,7 +5,7 @@
 | ADR | 1 — Fundação segura do app |
 | SPEC de origem | [`SPEC.md`](SPEC.md) |
 | PRD de origem | [`PRD.md`](PRD.md) |
-| Total de tasks | 46 |
+| Total de tasks | 48 |
 | Data | 2026-09-05 |
 
 Cada task é **um commit** e fecha com **uma validação automatizada** que falha antes e
@@ -48,21 +48,23 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 | T-29 | Seed dos 7 nichos | integração | V-26 | [ ] |
 | T-30 | Distribuição de `kind` dos nichos | integração | V-27 | [ ] |
 | T-31 | Seed idempotente | integração | V-28 | [ ] |
-| T-32 | Providers do banco | unidade | V-42 | [ ] |
-| T-33 | `BootstrapGate` e `main.dart` | widget | V-29 | [ ] |
-| T-34 | Tela de falha que não vaza | widget | V-30 | [ ] |
-| T-35 | Tema Material 3 com cor dinâmica | widget | V-31 | [ ] |
-| T-36 | Rotas e telas vazias | widget | V-32 | [ ] |
-| T-37 | Bottom nav e FAB persistente | widget | V-33 | [ ] |
-| T-38 | Alvos de toque ≥ 48dp | widget | V-34 | [ ] |
-| T-39 | Workflow de CI base | script CI | V-41 | [ ] |
-| T-40 | `libsqlcipher` no runner | script CI | V-13–V-18 | [ ] |
-| T-41 | Build do APK debug na CI | script CI | — | [ ] |
-| T-42 | Trava: sem `INTERNET` no APK | script CI | V-35 | [ ] |
-| T-43 | Trava: `allowBackup="false"` no APK | script CI | V-36 | [ ] |
-| T-44 | Trava: baseline de permissões | script CI | V-37 | [ ] |
-| T-45 | Trava: log de valor monetário | script CI | V-38 | [ ] |
-| T-46 | Trava: material da chave no código | script CI | V-39 | [ ] |
+| T-32 | Localização do arquivo do banco | unidade | V-43 | [ ] |
+| T-33 | Providers do banco | unidade | V-42 | [ ] |
+| T-34 | `BootstrapGate` e `main.dart` | widget | V-29 | [ ] |
+| T-35 | `debugPrint` no-op em release | unidade | V-44 | [ ] |
+| T-36 | Tela de falha que não vaza | widget | V-30 | [ ] |
+| T-37 | Tema Material 3 com cor dinâmica | widget | V-31 | [ ] |
+| T-38 | Rotas e telas vazias | widget | V-32 | [ ] |
+| T-39 | Bottom nav e FAB persistente | widget | V-33 | [ ] |
+| T-40 | Alvos de toque ≥ 48dp | widget | V-34 | [ ] |
+| T-41 | `libsqlcipher` no runner | script CI | V-13–V-18 | [ ] |
+| T-42 | Workflow de CI base | script CI | V-41 | [ ] |
+| T-43 | Build do APK debug na CI | script CI | — | [ ] |
+| T-44 | Trava: sem `INTERNET` no APK | script CI | V-35 | [ ] |
+| T-45 | Trava: `allowBackup="false"` no APK | script CI | V-36 | [ ] |
+| T-46 | Trava: baseline de permissões | script CI | V-37 | [ ] |
+| T-47 | Trava: log de valor monetário | script CI | V-38 | [ ] |
+| T-48 | Trava: material da chave no código | script CI | V-39 | [ ] |
 
 ---
 
@@ -97,7 +99,7 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   faz parse do XML e exige zero elementos `uses-permission`, `allowBackup="false"` e a
   presença dos dois atributos de regras.
 - **Pronto quando:** o teste passa. A verificação equivalente sobre o manifest *merged*
-  é a T-42/T-43 — esta cobre só o fonte.
+  é a T-44/T-45 — esta cobre só o fonte.
 - **Depende de:** T-01
 
 ### T-03 — Regras de extração de dados
@@ -471,7 +473,23 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 ## Bloco F — Bootstrap, navegação e tema
 
-### T-32 — Providers do banco
+### T-32 — Localização do arquivo do banco
+
+- **Spec:** §5.8
+- **Faz:** resolve o caminho de `jotta.db` no diretório privado do app via
+  `path_provider`. Nunca em armazenamento externo — arquivo cifrado em diretório
+  compartilhado continua sendo um arquivo que qualquer app com permissão de leitura
+  copia.
+- **Arquivos:** `lib/core/database/database_location.dart` [novo],
+  `test/core/database/database_location_test.dart` [novo], `pubspec.yaml` [altera]
+- **Validação:** `flutter test test/core/database/database_location_test.dart` —
+  unidade — **V-43** — com `PathProviderPlatform` substituído, o caminho resolvido cai
+  sob o diretório privado do app e termina em `jotta.db`; nenhum caminho externo é
+  produzido.
+- **Pronto quando:** o teste passa e `path_provider` está com versão exata no `pubspec`.
+- **Depende de:** T-04, T-15
+
+### T-33 — Providers do banco
 
 - **Spec:** §6
 - **Faz:** `databaseKeyStoreProvider` e `appDatabaseProvider` (`keepAlive`), com o
@@ -479,12 +497,12 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 - **Arquivos:** `lib/core/database/providers.dart` [novo],
   `test/app/providers_test.dart` [novo]
 - **Validação:** `flutter test test/app/providers_test.dart` — unidade — **V-42** — com
-  o store sobrescrito por um falso, o provider pede a chave uma vez e abre o banco com
-  exatamente aquela chave.
+  o store sobrescrito por um falso, o provider pede a chave uma vez e abre o banco no
+  caminho da T-32 com exatamente aquela chave.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-13, T-24
+- **Depende de:** T-13, T-24, T-32
 
-### T-33 — `BootstrapGate` e `main.dart`
+### T-34 — `BootstrapGate` e `main.dart`
 
 - **Spec:** §6
 - **Faz:** `ProviderScope`, `JottaApp` e o gate que observa o provider assíncrono.
@@ -494,20 +512,39 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   com o provider em erro, a árvore renderiza a tela de falha e **não** a casca de
   navegação; com o provider resolvido, o contrário.
 - **Pronto quando:** o teste passa nos dois estados.
-- **Depende de:** T-32
+- **Depende de:** T-33
 
-### T-34 — Tela de falha que não vaza
+### T-35 — `debugPrint` no-op em release
+
+- **Spec:** §5.9, §7 (SEG-6)
+- **Faz:** `installLogging({required bool isRelease})`, chamada no `main()`, que
+  substitui `debugPrint` por uma função vazia quando em release.
+- **Arquivos:** `lib/app/logging.dart` [novo], `lib/main.dart` [altera],
+  `test/app/logging_test.dart` [novo]
+- **Validação:** `flutter test test/app/logging_test.dart` — unidade — **V-44** — com
+  `isRelease: true`, `debugPrint('segredo')` não produz saída; com `isRelease: false`,
+  produz.
+- **Pronto quando:** o teste passa nos dois modos.
+- **Depende de:** T-34
+
+> O parâmetro `isRelease` existe para o teste: `kReleaseMode` é `const` e não dá para
+> alternar dentro da suíte. `main()` passa `kReleaseMode`; o teste passa os dois valores.
+> Sem essa costura, o controle só seria verificável instalando um APK de release — que é
+> exatamente como esta metade do SEG-6 tinha ficado sem prova.
+
+### T-36 — Tela de falha que não vaza
 
 - **Spec:** §6, §7 (RNF-16)
 - **Faz:** `BootstrapFailureScreen` mostrando só o tipo do erro.
 - **Arquivos:** `lib/app/bootstrap_gate.dart` [altera],
   `test/app/bootstrap_gate_test.dart` [altera]
-- **Validação:** mesmo comando — widget — **V-30** — com uma falha que carrega chave e
-  caminho do banco na mensagem, nenhum dos dois aparece na árvore renderizada.
+- **Validação:** `flutter test test/app/bootstrap_gate_test.dart` — widget — **V-30** —
+  com uma falha que carrega chave e caminho do banco na mensagem, nenhum dos dois
+  aparece na árvore renderizada.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-33
+- **Depende de:** T-34
 
-### T-35 — Tema Material 3 com cor dinâmica
+### T-37 — Tema Material 3 com cor dinâmica
 
 - **Spec:** §6
 - **Arquivos:** `lib/app/theme/app_theme.dart` [novo], `lib/app/app.dart` [altera],
@@ -516,9 +553,9 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   `useMaterial3` é true no claro e no escuro, e sem cor dinâmica disponível o tema cai
   no `ColorScheme.fromSeed` sem lançar.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-33
+- **Depende de:** T-34
 
-### T-36 — Rotas e telas vazias
+### T-38 — Rotas e telas vazias
 
 - **Spec:** §6
 - **Faz:** `StatefulShellRoute.indexedStack` com as 4 rotas e as 4 telas com estado
@@ -528,52 +565,61 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 - **Validação:** `flutter test test/app/router_test.dart` — widget — **V-32** — cada
   uma das 4 rotas resolve e renderiza o texto de estado vazio da sua tela.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-35
+- **Depende de:** T-37
 
-### T-37 — Bottom nav e FAB persistente
+### T-39 — Bottom nav e FAB persistente
 
 - **Spec:** §6
 - **Arquivos:** `lib/app/router.dart` [altera], `test/app/router_test.dart` [altera]
 - **Validação:** mesmo comando — widget — **V-33** — tocar cada aba troca a tela, o FAB
   está presente nas 4, e voltar para uma aba preserva a pilha dela.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-36
+- **Depende de:** T-38
 
-### T-38 — Alvos de toque ≥ 48dp
+### T-40 — Alvos de toque ≥ 48dp
 
 - **Spec:** §6, guarda-chuva RNF-7
 - **Arquivos:** `lib/app/router.dart` [altera], `test/app/router_test.dart` [altera]
 - **Validação:** mesmo comando — widget — **V-34** — o retângulo de cada item da bottom
   nav e do FAB tem altura e largura ≥ 48dp.
 - **Pronto quando:** o teste passa.
-- **Depende de:** T-37
+- **Depende de:** T-39
 
 ---
 
 ## Bloco G — CI e travas de segurança
 
-### T-39 — Workflow de CI base
+> **A ordem deste bloco não é arbitrária.** A biblioteca do SQLCipher entra **antes** do
+> job que roda a suíte: quando o workflow completo sobe, as tasks T-14 a T-19 já estão
+> comitadas, e sem `libsqlcipher` no runner elas reprovam. E o build do APK vem **antes**
+> das travas de manifest, porque elas leem o manifest *merged*, que só existe dentro do
+> APK.
+
+### T-41 — `libsqlcipher` no runner
+
+- **Spec:** §5.4
+- **Faz:** cria o workflow com a versão do Flutter fixada e a etapa
+  `apt-get install libsqlcipher-dev`, e roda **apenas** os testes de banco
+  (`flutter test test/core/database/`).
+- **Arquivos:** `.github/workflows/ci.yml` [novo]
+- **Validação:** o job na CI — script CI — **V-13 a V-18** — os seis testes do bloco C
+  passam no runner. Removendo a etapa do `apt-get`, os seis falham: é a demonstração.
+- **Pronto quando:** o job passa com a etapa e reprova sem ela.
+- **Depende de:** T-19
+
+### T-42 — Workflow de CI base
 
 - **Spec:** §3, guarda-chuva §5.9
-- **Faz:** workflow com versão do Flutter **fixada**, rodando `flutter analyze`,
-  `dart format --set-exit-if-changed .` e `flutter test --coverage`.
-- **Arquivos:** `.github/workflows/ci.yml` [novo]
+- **Faz:** acrescenta ao workflow `flutter analyze`,
+  `dart format --set-exit-if-changed .` e `flutter test --coverage` sobre a suíte
+  **inteira**.
+- **Arquivos:** `.github/workflows/ci.yml` [altera]
 - **Validação:** o job na CI — script CI — **V-41** — verde no push. Falha proposital
   (um `print` deixado no código) verificada uma vez antes do merge.
 - **Pronto quando:** o job passa e a demonstração da falha está registrada no commit.
-- **Depende de:** T-05
+- **Depende de:** T-05, T-41
 
-### T-40 — `libsqlcipher` no runner
-
-- **Spec:** §5.4
-- **Faz:** etapa `apt-get install libsqlcipher-dev` com versão fixada, antes dos testes.
-- **Arquivos:** `.github/workflows/ci.yml` [altera]
-- **Validação:** o job na CI — script CI — **V-13 a V-18** — os seis testes do bloco C
-  passam no runner. Sem esta etapa eles falham, o que é a demonstração.
-- **Pronto quando:** o job passa com os testes de banco incluídos.
-- **Depende de:** T-19, T-39
-
-### T-41 — Build do APK debug na CI
+### T-43 — Build do APK debug na CI
 
 - **Spec:** §3
 - **Faz:** etapa `flutter build apk --debug`, cujo artefato as travas seguintes leem.
@@ -581,11 +627,11 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 - **Validação:** o job na CI — script CI — a etapa falha se
   `build/app/outputs/flutter-apk/app-debug.apk` não existir ao final.
 - **Pronto quando:** o APK é produzido em cada execução.
-- **Depende de:** T-38, T-39
+- **Depende de:** T-40, T-42
 
-### T-42 — Trava: sem `INTERNET` no APK
+### T-44 — Trava: sem `INTERNET` no APK
 
-- **Spec:** §2, §7 (SEG-5, RNF-14 #1)
+- **Spec:** §2, §7 (SEG-5, guarda-chuva §5.9 item 1)
 - **Faz:** `check_manifest.sh` lendo o manifest **merged** do APK com `aapt2 dump
   permissions`.
 - **Arquivos:** `tool/ci/check_manifest.sh` [novo], `.github/workflows/ci.yml` [altera]
@@ -593,22 +639,22 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   `android.permission.INTERNET` aparece. Demonstrado adicionando a permissão ao
   manifest, vendo o job falhar, e removendo.
 - **Pronto quando:** o script passa no APK real e falha na fixture negativa.
-- **Depende de:** T-41
+- **Depende de:** T-43
 
 > Lê o APK, não o XML-fonte: o merge de dependências é justamente o caminho pelo qual
 > uma permissão entra sem ninguém escrever uma linha (risco A4).
 
-### T-43 — Trava: `allowBackup="false"` no APK
+### T-45 — Trava: `allowBackup="false"` no APK
 
-- **Spec:** §7 (SEG-4, RNF-14 #2)
+- **Spec:** §7 (SEG-4, guarda-chuva §5.9 item 2)
 - **Arquivos:** `tool/ci/check_manifest.sh` [altera]
 - **Validação:** o script na CI — script CI — **V-36** — reprova se `allowBackup` for
   diferente de `false` no manifest merged, ou se as regras de extração sumirem.
   Demonstrado com `allowBackup="true"`.
 - **Pronto quando:** o script passa no APK real e falha na fixture negativa.
-- **Depende de:** T-42
+- **Depende de:** T-44
 
-### T-44 — Trava: baseline de permissões
+### T-46 — Trava: baseline de permissões
 
 - **Spec:** §2, guarda-chuva §6.6
 - **Faz:** compara a lista de permissões do APK com um baseline versionado (vazio).
@@ -617,11 +663,11 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   baseline reprova o build, com o diff impresso. Demonstrado com `VIBRATE`, que é
   inofensiva e ainda assim precisa de decisão explícita.
 - **Pronto quando:** o script passa e falha na fixture negativa.
-- **Depende de:** T-43
+- **Depende de:** T-45
 
-### T-45 — Trava: log de valor monetário
+### T-47 — Trava: log de valor monetário
 
-- **Spec:** §7 (SEG-6, RNF-14 #4)
+- **Spec:** §7 (SEG-6, guarda-chuva §5.9 item 4)
 - **Faz:** `check_logs.sh` com o `grep` de padrões de log de valor fora de bloco de
   debug.
 - **Arquivos:** `tool/ci/check_logs.sh` [novo], `.github/workflows/ci.yml` [altera]
@@ -629,9 +675,9 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   `print('valor: $amountCents')` fora de `kDebugMode`. Demonstrado com a linha
   injetada.
 - **Pronto quando:** o script passa e falha na fixture negativa.
-- **Depende de:** T-39
+- **Depende de:** T-42
 
-### T-46 — Trava: material da chave no código
+### T-48 — Trava: material da chave no código
 
 - **Spec:** §5.1, §7 (RNF-16)
 - **Faz:** estende `check_logs.sh` para reprovar `toHex()` de `DatabaseKey` fora de
@@ -640,7 +686,7 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 - **Validação:** o script na CI — script CI — **V-39** — uma chamada a `key.toHex()`
   em qualquer outro arquivo reprova o build.
 - **Pronto quando:** o script passa e falha na fixture negativa.
-- **Depende de:** T-45
+- **Depende de:** T-47
 
 ---
 
@@ -648,26 +694,27 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 O ADR-1 está fechado quando, e só quando:
 
-1. As **46 tasks** estão marcadas, cada uma com seu commit e sua validação verde.
+1. As **48 tasks** estão marcadas, cada uma com seu commit e sua validação verde.
 2. `flutter test` roda a suíte inteira sem falha e sem teste pulado.
-3. A CI está verde, e as **5 travas de segurança** (T-42 a T-46) foram cada uma
+3. A CI está verde, e as **5 travas de segurança** (T-44 a T-48) foram cada uma
    demonstradas reprovando uma violação proposital — não basta estarem verdes, elas
    precisam ter provado que sabem falhar.
 4. Os **8 critérios de aceite** do [`PRD.md`](PRD.md) foram verificados um a um.
 5. O checklist manual do marco foi feito **em aparelho real**, e não só no desktop:
-   - APK instalado em um Android 8.0 ou superior;
+   - APK instalado em um Android 8.0 ou superior — **é esta a metade do CA-1 que
+     nenhum teste de widget cobre**;
    - o app abre, navega pelas 4 abas e não trava;
    - o arquivo `jotta.db` extraído do sandbox via `adb` não abre com `sqlite3`, e
      `strings` nele não revela nome de tabela nem conteúdo;
-   - `logcat` limpo durante uma sessão completa de uso.
+   - `logcat` limpo durante uma sessão completa de uso, em build de release.
 
 O item 5 é a contrapartida da decisão de não colocar emulador na CI. Ele é obrigatório
 para fechar o marco, e é o único ponto do ADR-1 em que a prova é humana.
 
 ## Cobertura
 
-**42 linhas** na tabela de testes da SPEC (V-01 a V-42). **42 têm task correspondente.**
+**44 linhas** na tabela de testes da SPEC (V-01 a V-44). **44 têm task correspondente.**
 Nenhuma ficou de fora.
 
-Uma task não tem `V-xx`: a **T-41** (build do APK), cuja validação é a existência do
-artefato — ela não prova requisito nenhum, existe para alimentar as travas T-42 a T-44.
+Uma task não tem `V-xx`: a **T-43** (build do APK), cuja validação é a existência do
+artefato — ela não prova requisito nenhum, existe para alimentar as travas T-44 a T-46.

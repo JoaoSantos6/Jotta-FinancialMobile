@@ -81,6 +81,11 @@ Explicitamente **fora** do escopo, para não haver dúvida:
 Como é um produto de usuário único, as métricas são de **uso próprio**, medidas
 localmente pelo app (tela de Ajustes → "Meu uso"), sem envio a lugar nenhum.
 
+> **Cuidado com a sigla:** `M1`–`M6` aqui são **métricas**; na seção 8, `M0`–`M6` são
+> **marcos** do roadmap. São numerações independentes e elas se cruzam no mesmo texto
+> (o critério de saída do marco M2 cita a métrica M3). Toda menção fora de tabela diz
+> qual das duas é.
+
 | # | Métrica | Meta MVP | Como medir |
 |---|---|---|---|
 | M1 | Retenção pessoal D30 | App aberto em ≥ 20 dos 30 primeiros dias | Contador local de dias com sessão |
@@ -90,7 +95,13 @@ localmente pelo app (tela de Ajustes → "Meu uso"), sem envio a lugar nenhum.
 | M5 | Estabilidade | 0 crashes em 30 dias de uso | Log local de exceções não tratadas |
 | M6 | Confiança nos dados | Backup exportado e reimportado com sucesso ao menos 1x | Flag em `app_settings` |
 
-**Critério de "MVP bem-sucedido":** M1, M2 e M3 batidos após 30 dias de uso real.
+**M3 e M4 empurram para lados opostos**, e isso é proposital: o caminho de 3 toques do
+RF-7 habilita "Salvar" sem descrição, enquanto M4 cobra descrição em 95% dos gastos. Se
+as duas baterem juntas, o formulário está certo. Se M4 falhar enquanto M3 passa, a
+descrição está fácil demais de pular; se M3 falhar enquanto M4 passa, está obrigatória
+demais na prática. O par mede o equilíbrio, não cada um sozinho.
+
+**Critério de "MVP bem-sucedido" (métricas):** M1, M2 e M3 batidos após 30 dias de uso real.
 Se M3 falhar, o problema é o formulário de lançamento — e ele é a coisa mais
 importante do app. Nenhuma feature nova entra antes de M3 estar verde.
 
@@ -679,7 +690,11 @@ entra sem regressão coberta.
 GitHub Actions em cada push da branch:
 
 `flutter analyze` → `dart format --set-exit-if-changed` → `flutter test --coverage` →
-**travas de segurança (RNF-14)** → `flutter build apk --debug`.
+`flutter build apk --debug` → **travas de segurança (RNF-14)**.
+
+A ordem importa: as travas 1 e 2 abaixo leem o manifest **merged**, que só existe depois
+do APK construído. Verificá-las antes do build seria verificar o arquivo-fonte — que é
+exatamente o que elas existem para não fazer.
 
 As travas de segurança são reprovação dura do build, não aviso:
 
@@ -747,13 +762,26 @@ Banco local cifrado com **SQLCipher** (`sqlcipher_flutter_libs` + Drift), AES-25
 - Guardada no **Android Keystore**, com respaldo em hardware (TEE/StrongBox) quando o
   aparelho oferecer, acessada via `flutter_secure_storage` (EncryptedSharedPreferences).
 - `setUserAuthenticationRequired(false)`: o gate de acesso é o SEG-2, na camada de UI.
-  Amarrar a chave à biometria quebraria a geração de recorrências e a abertura do app
-  sem digital cadastrada.
+  Amarrar a chave à biometria forçaria autenticação **durante o bootstrap**, antes de
+  existir interface para pedi-la — o banco precisa abrir para o app montar qualquer
+  tela — e deixaria o app inabrível em aparelho sem digital cadastrada.
+
+> Correção de redação (2026-09-05): a versão anterior justificava isso dizendo que
+> "quebraria a geração de recorrências". Não quebraria: o RF-10 gera as recorrências na
+> primeira abertura após a virada do mês, ou seja, em primeiro plano e depois do
+> desbloqueio. A decisão continua válida; a razão citada não era.
 - A chave **nunca** é escrita em log, **nunca** aparece no arquivo de backup, **nunca**
   trafega — não há para onde trafegar.
 
-> Aceite: com o arquivo `jotta.db` extraído do aparelho, `sqlite3` recusa abrir e
-> `strings jotta.db` não revela nenhuma descrição, valor ou nome de tabela.
+> Aceite, em dois níveis:
+> **(a) automatizado, a cada push** — um teste cria o banco com SQLCipher no runner,
+> verifica que `PRAGMA cipher_version` não é vazio, e exige que reabrir sem chave ou com
+> chave errada falhe e que uma descrição-marcador não apareça nos bytes do arquivo.
+> **(b) manual, uma vez por marco** — com o `jotta.db` extraído do aparelho via `adb`,
+> `sqlite3` recusa abrir e `strings` não revela descrição, valor ou nome de tabela.
+>
+> O nível (a) substituiu a exigência de emulador na CI; o (b) é a contrapartida que
+> mantém a prova acontecendo em hardware real. Ver `adr-1/PRD.md`, CA-3.
 
 **SEG-2 · Bloqueio do app**
 Autenticação exigida na abertura, via `BiometricPrompt` do Android (`local_auth`), com
@@ -904,10 +932,14 @@ para que essa conversa aconteça **antes** da primeira linha de backend, não de
 
 Automatizados, em CI:
 
-1. Banco extraído não abre sem a chave (`sqlite3` falha; `strings` não revela dado).
+1. `PRAGMA cipher_version` não vazio; banco não abre sem a chave nem com chave errada;
+   descrição-marcador ausente dos bytes do arquivo. Roda no runner, a cada push. A
+   extração do banco **do aparelho** é o item equivalente do checklist manual.
 2. Manifest merged: sem `INTERNET`, com `allowBackup="false"`, com regras de extração
    negando cloud e device-transfer.
-3. Round-trip do backup: exporta → importa → os dados batem byte a byte.
+3. Round-trip do backup: exporta → importa → os dados batem **registro a registro**.
+   Não o arquivo: dois exports da mesma base produzem bytes diferentes de propósito, por
+   causa do salt e do nonce novos — que é justamente o que o item 6 exige.
 4. Backup com senha errada é rejeitado sem escrever nada no banco.
 5. Backup com 1 byte alterado é rejeitado pela tag GCM, sem importação parcial.
 6. Salt e nonce diferentes em duas exportações consecutivas da mesma base com a mesma
@@ -1008,7 +1040,7 @@ futuro, e o dado em risco é o mesmo desde o primeiro lançamento.
 | R9 | Senha do backup esquecida torna o arquivo lixo | Média | Alto | Aviso explícito no momento do export; incentivo a gerenciador de senhas. Não existe backdoor — se existisse, a criptografia não valeria nada |
 | R10 | Dependência de terceiro comprometida (supply chain) — o maior vetor restante num app sem rede | Baixa | **Alto** | `pubspec.lock` fixo, conjunto mínimo de deps, PR reprovado para dependência que peça permissão ou abra socket, diff do manifest merged em CI (6.6) |
 | R11 | Atrito do bloqueio biométrico empurrando o usuário a desligá-lo, anulando SEG-2 | Média | Médio | Re-bloqueio só após 60s em segundo plano (configurável). Se dados de uso mostrarem que ele foi desligado, o problema é o tempo, não o controle |
-| R12 | Overhead do SQLCipher degradar a Home e ferir RNF-3 | Baixa | Médio | RNF-11 mede desde M0, com 10k transações semeadas. Se estourar, otimiza-se índice e query — nunca se remove a criptografia |
+| R12 | Overhead do SQLCipher degradar a Home e ferir RNF-3 | Baixa | Médio | RNF-11 é medido no **ADR-3 (marco M2)**, quando a query agregada existe e há o que cronometrar, com 10k transações semeadas. Até lá o risco fica descoberto — consequência aceita de não ter query nenhuma antes do M2. Se estourar, otimiza-se índice e query — nunca se remove a criptografia |
 
 ---
 
