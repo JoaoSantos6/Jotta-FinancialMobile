@@ -29,6 +29,12 @@ perguntada e respondida. Alterar uma linha significa reabrir o PRD.
 | 2026-09-05 | Task = **um commit, um teste**. Nenhuma task fecha sem validação automatizada que falhe antes e passe depois | Task de meio dia a um dia; fatia vertical fim-a-fim validada por e2e | Usuário |
 | 2026-09-05 | Skills `to-prd`, `to-spec` e `to-task` **travam a cadeia**: `to-spec` para se faltar o PRD, `to-task` para se faltar a SPEC | Skill única gerando os três; travas por convenção, sem verificação | Usuário |
 | 2026-09-05 | Pasta nomeada `adr-N` sem slug (`docs/adr-1/`), numeração sequencial nunca reciclada | `adr-001-setup-seguro` com slug descritivo | Claude (segue literalmente o formato pedido; slug duplicaria o título do PRD) |
+| 2026-09-05 | `applicationId` = **`com.jotta.financial`**, nome de exibição "Jotta" | `br.com.joaosantos.jotta`; `com.jottafinancial.app` | Usuário |
+| 2026-09-05 | Prova do SEG-1 roda **no desktop, na CI** (teste que checa `cipher_version` e tenta abrir sem a chave); verificação em aparelho vira checklist manual de fim de marco | Emulador Android na CI desde o M0; emulador só no merge/nightly | Usuário |
+| 2026-09-05 | M0 entrega **casca navegável** com bottom nav, FAB central, tema M3 e 4 telas em estado vazio | Só infraestrutura com uma tela provisória; casca + onboarding de segurança antecipado do M5 | Usuário |
+| 2026-09-05 | Chave do SQLCipher passada como **raw key hex** (`PRAGMA key = x'…'`), sem KDF por cima | Passar a chave como texto e deixar o SQLCipher rodar PBKDF2 | Claude (a chave já tem 256 bits de CSPRNG; derivar de novo só custa tempo de abertura) |
+| 2026-09-05 | Schema **v1 completo** (as 8 tabelas) na migração 1, no ADR-1; DAOs ficam nos ADRs que os consomem | Criar cada tabela no ADR que a usa | Claude (fatiar geraria 6 migrações para chegar ao mesmo lugar, cada uma com risco de perda de dados) |
+| 2026-09-05 | Travas de manifest na CI leem o **APK construído** (`aapt2 dump`), não o XML-fonte | `grep` no `AndroidManifest.xml` do repositório | Claude (o fonte não enxerga o que o merge de dependências acrescentou) |
 
 ## Em aberto (perguntar antes de implementar)
 

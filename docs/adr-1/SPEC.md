@@ -1,0 +1,453 @@
+# ADR-1 — Especificação técnica
+
+| Campo | Valor |
+|---|---|
+| ADR | 1 — Fundação segura do app |
+| PRD de origem | [`PRD.md`](PRD.md) |
+| Guarda-chuva | [`../PRD-MVP.md`](../PRD-MVP.md), seções 5 e 6 |
+| Versão | 1.0 |
+| Data | 2026-09-05 |
+| Status | Aprovado |
+
+---
+
+## 1. Resumo técnico
+
+Cria o projeto Flutter `com.jotta.financial`, sobe o banco Drift **sobre SQLCipher** com
+chave de 32 bytes vinda do Android Keystore, aplica o schema v1 completo com o seed dos
+7 nichos, monta a casca de navegação (Riverpod + go_router + Material 3) e instala uma
+CI que reprova o build se qualquer garantia de segurança for afrouxada.
+
+O eixo técnico da fatia é um detalhe fácil de errar: **`PRAGMA key` em uma SQLite que
+não é SQLCipher é aceito e ignorado.** O banco fica em claro e nada avisa. Toda a
+estratégia de teste deste ADR gira em torno de provar que isso não aconteceu.
+
+## 2. Decisões técnicas desta fatia
+
+| Decisão | Alternativa descartada | Por quê |
+|---|---|---|
+| `applicationId` = `com.jotta.financial` | `br.com.joaosantos.jotta`; `com.jottafinancial.app` | Decisão do usuário. Trava agora porque mudar depois da 1ª instalação com dado real apaga um banco irrecuperável |
+| Chave passada como **raw key hex**: `PRAGMA key = "x'<64 hex>'"` | Passar a chave como texto e deixar o SQLCipher rodar PBKDF2 por cima | A chave já tem 256 bits de entropia de CSPRNG. Derivar de novo custa tempo de abertura e não acrescenta segurança |
+| Prova do SEG-1 roda no **desktop**, na CI, com `libsqlcipher` do sistema | Emulador Android no pipeline | Decisão do usuário. Vale minutos por push em vez de 10-15 min e sem a fragilidade do emulador. O risco A2 do PRD é o preço |
+| Schema **v1 completo** na migração 1, com as 8 tabelas | Criar cada tabela no ADR que a consome | Migração é global e barata de fazer de uma vez; fatiar cria 6 migrações para chegar no mesmo lugar, cada uma com risco de perda de dados |
+| Seed dos nichos no `onCreate` da migração, não em código de app | Semear na primeira abertura da Home | O seed é parte do schema: um banco sem os 7 nichos é um banco inválido, não um banco vazio |
+| `DatabaseKey` é um tipo próprio com `toString()` redigido | Passar a chave como `String` | `String` cru aparece em log, em mensagem de exceção e em `toString()` de objeto que a contenha. RNF-16 vira estrutural em vez de disciplina |
+| Trava de manifest lê o **APK construído** via `aapt2 dump`, não o XML-fonte | `grep` no `AndroidManifest.xml` do repositório | O fonte não vê o que o merge de dependências acrescentou. É exatamente o cenário do risco A4 |
+| Regra de camadas verificada por teste que varre imports | Convenção documentada e revisão de PR | Convenção não roda na CI |
+
+Todas as linhas acima vão para `docs/DECISIONS.md`.
+
+## 3. Estrutura de arquivos
+
+```
+pubspec.yaml                                   [novo]
+analysis_options.yaml                          [novo]
+.github/workflows/ci.yml                       [novo]
+tool/ci/check_manifest.sh                      [novo]   travas RNF-14 #1 e #2
+tool/ci/check_logs.sh                          [novo]   travas RNF-14 #4 e RNF-16
+tool/ci/permissions.baseline                   [novo]   baseline versionado (vazio)
+
+android/app/build.gradle.kts                   [novo]   applicationId, minSdk 26
+android/app/src/main/AndroidManifest.xml       [novo]   zero permissões, allowBackup=false
+android/app/src/main/res/xml/
+  data_extraction_rules.xml                    [novo]   nega cloud-backup e device-transfer
+  backup_rules.xml                             [novo]   fullBackupContent vazio (API < 31)
+
+lib/
+├── main.dart                                  [novo]   bootstrap
+├── app/
+│   ├── app.dart                               [novo]   JottaApp (MaterialApp.router)
+│   ├── router.dart                             [novo]   go_router + shell
+│   ├── bootstrap_gate.dart                    [novo]   splash / erro de abertura do banco
+│   └── theme/app_theme.dart                   [novo]   M3 + cor dinâmica
+├── core/
+│   ├── result/result.dart                     [novo]   Result<T, Failure>
+│   ├── security/
+│   │   ├── database_key.dart                  [novo]   DatabaseKey (toString redigido)
+│   │   ├── database_key_store.dart            [novo]   interface
+│   │   └── keystore_database_key_store.dart   [novo]   flutter_secure_storage
+│   └── database/
+│       ├── app_database.dart                  [novo]   @DriftDatabase, schemaVersion 1
+│       ├── open_encrypted_database.dart       [novo]   PRAGMA key + verificação
+│       ├── sqlcipher_loader.dart              [novo]   override de open por plataforma
+│       ├── tables/*.dart                      [novo]   8 tabelas
+│       └── seed/niche_seed.dart               [novo]   as 7 linhas
+└── features/
+    ├── overview/presentation/overview_page.dart   [novo]   vazia
+    ├── niches/presentation/niches_page.dart       [novo]   vazia
+    ├── income/presentation/income_page.dart       [novo]   vazia
+    └── settings/presentation/settings_page.dart   [novo]   vazia
+
+test/
+├── config/
+│   ├── android_config_test.dart               [novo]
+│   ├── manifest_source_test.dart              [novo]
+│   └── pubspec_pinning_test.dart              [novo]
+├── architecture/layering_test.dart            [novo]
+├── core/result/result_test.dart               [novo]
+├── core/security/
+│   ├── database_key_test.dart                 [novo]
+│   └── keystore_database_key_store_test.dart  [novo]
+├── core/database/
+│   ├── sqlcipher_active_test.dart             [novo]   CA-2
+│   ├── encryption_at_rest_test.dart           [novo]   CA-3
+│   ├── schema_v1_test.dart                    [novo]   CA-5
+│   ├── schema_snapshot_test.dart              [novo]   golden do sqlite_master
+│   └── niche_seed_test.dart                   [novo]   CA-5
+└── app/
+    ├── providers_test.dart                    [novo]
+    ├── bootstrap_gate_test.dart               [novo]
+    ├── router_test.dart                       [novo]
+    └── theme_test.dart                        [novo]
+
+test/fixtures/schema_v1.sql                    [novo]   golden do schema
+```
+
+Nenhum diretório `data/` ou `domain/` de feature é criado neste ADR: não há regra de
+negócio nem repositório ainda. As pastas nascem no ADR-2, com conteúdo.
+
+## 4. Modelo de dados
+
+Implementa **integralmente** a seção 5.3 do guarda-chuva. **Diff: nenhum.** As 8 tabelas
+e os 3 índices parciais são criados na migração 1; nenhuma coluna é adicionada,
+removida ou renomeada.
+
+Mapeamento Drift (`lib/core/database/tables/`):
+
+| Tabela SQL | Classe Drift | Observação |
+|---|---|---|
+| `niches` | `Niches` | `id` textual semântico (`'casa'`), não UUID |
+| `transactions` | `Transactions` | `CHECK (amount_cents > 0)` via `customConstraints` |
+| `income_sources` | `IncomeSources` | |
+| `investments` | `Investments` | |
+| `investment_balances` | `InvestmentBalances` | |
+| `debts` | `Debts` | |
+| `debt_installments` | `DebtInstallments` | `UNIQUE (debt_id, number)` |
+| `app_settings` | `AppSettings` | chave-valor textual |
+
+Convenções, fixadas aqui e válidas para todos os ADRs seguintes:
+
+- Dinheiro é `IntColumn` em centavos. **Nunca** `RealColumn`.
+- Data é `TextColumn` no formato `YYYY-MM-DD`, hora local. **Nunca** `DateTimeColumn` —
+  Drift persistiria como timestamp e reintroduziria fuso onde não existe fuso.
+- `id` é `TextColumn` com UUID v4, exceto `niches`.
+- `deleted_at` nulo significa vivo. Todo índice é parcial com `WHERE deleted_at IS NULL`.
+
+```dart
+class Transactions extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => text()();
+  IntColumn  get amountCents => integer().named('amount_cents')();
+  TextColumn get occurredOn => text().named('occurred_on')();
+  TextColumn get description => text().nullable()();
+  // ... demais colunas conforme 5.3
+  TextColumn get deletedAt => text().named('deleted_at').nullable()();
+
+  @override Set<Column> get primaryKey => {id};
+  @override List<String> get customConstraints => ['CHECK (amount_cents > 0)'];
+}
+```
+
+Os índices parciais não têm equivalente declarativo em Drift e são criados por SQL
+literal no `onCreate`, exatamente como escritos na seção 5.3.
+
+**Estratégia de migração** (`MigrationStrategy`):
+
+- `onCreate`: cria tudo e roda o seed dos nichos, **na mesma transação**. Um banco meio
+  criado não pode sobreviver a um erro no meio.
+- `onUpgrade`: lança `UnsupportedError` — não existe v2 ainda, e um `onUpgrade` vazio
+  que aceita qualquer versão é uma armadilha esperando o ADR-2.
+- `beforeOpen`: liga `PRAGMA foreign_keys = ON` (SQLite deixa desligado por padrão, e
+  todas as invariantes da 5.3 dependem disso).
+
+## 5. Contratos
+
+### 5.1 `DatabaseKey` — `core/security/database_key.dart`
+
+```dart
+/// Chave de 256 bits do SQLCipher. Existe para que a chave nunca vire String solta.
+final class DatabaseKey {
+  /// Lança [ArgumentError] se [bytes] não tiver exatamente 32 posições.
+  factory DatabaseKey.fromBytes(Uint8List bytes);
+
+  /// Lança [FormatException] se não for hex de 64 caracteres.
+  factory DatabaseKey.fromHex(String hex);
+
+  /// Gera 32 bytes com [Random.secure] (CSPRNG do sistema).
+  factory DatabaseKey.generate();
+
+  /// Forma aceita pelo SQLCipher como raw key: `x'a1b2...'` (64 hex).
+  String get pragmaLiteral;
+
+  String toHex();
+
+  /// SEMPRE 'DatabaseKey(<redigida>)'. Nunca o material.
+  @override String toString();
+}
+```
+
+**Invariante:** nenhum caminho de código expõe o material da chave a não ser
+`pragmaLiteral` e `toHex()`, e `toHex()` só é chamado pelo `DatabaseKeyStore` ao
+persistir. O `grep` de CI (RNF-16) reprova qualquer `toHex()` fora desses dois lugares.
+
+### 5.2 `DatabaseKeyStore` — `core/security/database_key_store.dart`
+
+```dart
+abstract interface class DatabaseKeyStore {
+  /// Devolve a chave existente ou gera e persiste uma na primeira chamada.
+  /// Chamadas seguintes devolvem sempre a mesma chave.
+  Future<Result<DatabaseKey, KeyStoreFailure>> getOrCreate();
+
+  /// Apaga o material do Keystore. Primitiva para o RF-29 (M5).
+  /// Depois disso, [getOrCreate] gera uma chave nova — e o banco antigo fica ilegível.
+  Future<Result<void, KeyStoreFailure>> destroy();
+}
+
+sealed class KeyStoreFailure {}
+final class KeystoreUnavailable extends KeyStoreFailure {}   // hardware/SO recusou
+final class KeyCorrupted extends KeyStoreFailure {}          // valor lido não é hex de 64
+```
+
+`KeystoreDatabaseKeyStore` implementa com `flutter_secure_storage`, chave
+`jotta.db.key`, `AndroidOptions(encryptedSharedPreferences: true)`.
+
+**`getOrCreate` não é atômico entre processos** e não precisa ser: o app tem um único
+processo e a chamada acontece uma vez, no bootstrap, antes de qualquer UI.
+
+### 5.3 `openEncryptedDatabase` — `core/database/open_encrypted_database.dart`
+
+```dart
+/// Abre [file] cifrado com [key] e prova que o SQLCipher está de fato ativo.
+///
+/// Ordem obrigatória: PRAGMA key ANTES de qualquer outra instrução. Um SELECT
+/// antes do key faz o SQLCipher marcar o banco como não-cifrado nesta conexão.
+///
+/// Lança [SqlCipherUnavailable] se `PRAGMA cipher_version` vier vazio — o caso em
+/// que a lib carregada é SQLite puro, o PRAGMA key foi ignorado e o banco estaria
+/// em claro sem nenhum erro visível.
+/// Lança [DatabaseLocked] se a chave não abrir o arquivo.
+QueryExecutor openEncryptedDatabase({required File file, required DatabaseKey key});
+```
+
+Sequência no `setup` do `NativeDatabase`:
+
+1. `PRAGMA key = x'...';`
+2. `PRAGMA cipher_version;` → vazio ⇒ `SqlCipherUnavailable`
+3. `SELECT count(*) FROM sqlite_master;` → falha ⇒ `DatabaseLocked`
+
+O passo 3 é o que transforma "chave errada" em erro imediato no bootstrap, em vez de
+uma exceção obscura na primeira query da Home.
+
+### 5.4 `sqlcipherLoader` — `core/database/sqlcipher_loader.dart`
+
+Resolve qual biblioteca nativa o `sqlite3` do Dart carrega:
+
+| Plataforma | Origem |
+|---|---|
+| Android | `sqlcipher_flutter_libs` (embarcada no APK) |
+| Linux (CI e dev) | `libsqlcipher.so` do sistema, via `open.overrideFor` |
+
+Sem o override, o teste no Linux carrega a SQLite do sistema, o `PRAGMA key` é ignorado
+e o teste do CA-3 falharia — corretamente. É por isso que a verificação do
+`cipher_version` (CA-2) precisa existir separada: ela distingue "cifra quebrada" de
+"biblioteca errada carregada".
+
+### 5.5 `AppDatabase` — `core/database/app_database.dart`
+
+```dart
+@DriftDatabase(tables: [Niches, Transactions, IncomeSources, Investments,
+                        InvestmentBalances, Debts, DebtInstallments, AppSettings])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase(super.executor);
+
+  @override int get schemaVersion => 1;
+  @override MigrationStrategy get migration; // conforme seção 4
+}
+```
+
+Nenhum DAO é declarado neste ADR.
+
+### 5.6 Seed — `core/database/seed/niche_seed.dart`
+
+```dart
+/// As 7 linhas de `niches`. Fixas no MVP: o usuário não cria nem remove nichos.
+const List<NichesCompanion> kNicheSeed = [...];
+```
+
+| id | nome | kind | sort_order |
+|---|---|---|---|
+| `casa` | Casa | `expense` | 1 |
+| `transporte` | Transporte | `expense` | 2 |
+| `alimentacao` | Alimentação | `expense` | 3 |
+| `saude` | Saúde | `expense` | 4 |
+| `lazer` | Lazer | `expense` | 5 |
+| `investimentos` | Investimentos | `investment` | 6 |
+| `dividas` | Dívidas | `debt` | 7 |
+
+O seed é idempotente (`InsertMode.insertOrIgnore`), para que uma futura migração possa
+reexecutá-lo sem duplicar.
+
+### 5.7 `Result` — `core/result/result.dart`
+
+```dart
+sealed class Result<T, F> {
+  R fold<R>({required R Function(T) ok, required R Function(F) err});
+}
+final class Ok<T, F> extends Result<T, F> { const Ok(this.value); final T value; }
+final class Err<T, F> extends Result<T, F> { const Err(this.failure); final F failure; }
+```
+
+Deliberadamente mínimo. Falha esperada (Keystore indisponível, chave corrompida) é
+`Result`; bug de programação continua sendo exceção.
+
+## 6. Estado e fluxo
+
+Providers (Riverpod 2 com `@riverpod`), em `core/database/providers.dart`:
+
+```dart
+@Riverpod(keepAlive: true) DatabaseKeyStore databaseKeyStore(Ref ref);
+@Riverpod(keepAlive: true) Future<AppDatabase> appDatabase(Ref ref);
+```
+
+Bootstrap:
+
+```
+main()
+  └─ ProviderScope
+       └─ JottaApp
+            └─ BootstrapGate  ── observa appDatabaseProvider
+                 ├─ loading → splash (sem texto: não pisca "carregando" em 200 ms)
+                 ├─ error   → BootstrapFailureScreen
+                 └─ data    → MaterialApp.router (casca navegável)
+```
+
+`appDatabase` orquestra: `getOrCreate()` → `openEncryptedDatabase` → `AppDatabase`. É
+`keepAlive` porque o banco vive enquanto o app viver; nenhum `autoDispose` fecha conexão
+por trás da UI.
+
+**`BootstrapFailureScreen`** existe porque as falhas aqui são reais e não recuperáveis
+em tela: Keystore indisponível, chave corrompida, `SqlCipherUnavailable`. Ela mostra o
+tipo do erro e nada mais — **nunca a chave, nunca o caminho completo do banco**. Sem
+essa tela, o modo de falha é tela branca.
+
+`BootstrapFailureScreen` não oferece "tentar de novo" nem "apagar e recomeçar": as duas
+ações são destrutivas ou inúteis, e a segunda é o RF-29, do M5.
+
+Navegação (`app/router.dart`): `StatefulShellRoute.indexedStack` com `/`, `/nichos`,
+`/renda`, `/ajustes`. Cada aba mantém sua própria pilha. O FAB vive no shell, não nas
+telas — ele é persistente por requisito (seção 3.1 do guarda-chuva) e neste ADR não
+abre nada.
+
+Tema (`app/theme/app_theme.dart`): `ColorScheme.fromSeed` com semente fixa, substituída
+pelo `dynamicColorScheme` quando o aparelho oferece (`dynamic_color`), claro e escuro,
+`useMaterial3: true`.
+
+## 7. Segurança da fatia
+
+| Controle | O que esta fatia faz | Onde |
+|---|---|---|
+| **SEG-1** | Banco cifrado AES-256; chave de 32B CSPRNG no Keystore com `EncryptedSharedPreferences`; raw key hex, sem KDF redundante | 5.1–5.4 |
+| **SEG-4** | `allowBackup="false"`, `dataExtractionRules` negando `cloud-backup` e `device-transfer`, `fullBackupContent` vazio para API < 31 | manifest + `res/xml/` |
+| **SEG-5** | Zero `<uses-permission>`. Nenhuma dependência com I/O de rede | manifest + `pubspec.yaml` |
+| **SEG-6** (parcial) | `debugPrint` no-op em release; `grep` de CI contra log de valor monetário. R8 e `debuggable` ficam no M6 | `main.dart`, `tool/ci/check_logs.sh` |
+| **SEG-8** (parcial) | Chave nasce aqui; `destroy()` existe como primitiva. O RF-29 que a usa é do M5 | 5.2 |
+| **RNF-16** | `DatabaseKey.toString()` redigido + `grep` de CI por `toHex()` fora dos dois pontos autorizados | 5.1 |
+
+`setUserAuthenticationRequired(false)` é o padrão do `flutter_secure_storage` e é o
+comportamento desejado (SEG-1 do guarda-chuva): nada precisa ser configurado, mas o
+teste do `KeystoreDatabaseKeyStore` fixa a expectativa para que uma versão futura da
+dependência não mude isso em silêncio.
+
+## 8. Estratégia de testes
+
+Toda linha desta tabela vira a validação de pelo menos uma task no `TASK.md`.
+
+| # | O que prova | Tipo | Arquivo |
+|---|---|---|---|
+| V-01 | `applicationId` é `com.jotta.financial` e `minSdk` é 26 | config | `test/config/android_config_test.dart` |
+| V-02 | Manifest-fonte sem `<uses-permission>`, com `allowBackup="false"` e `dataExtractionRules` | config | `test/config/manifest_source_test.dart` |
+| V-03 | `data_extraction_rules.xml` nega `cloud-backup` e `device-transfer` | config | `test/config/manifest_source_test.dart` |
+| V-04 | Dependências de cripto e banco com versão exata, sem `^` nem `any` | config | `test/config/pubspec_pinning_test.dart` |
+| V-05 | Nenhum arquivo em `features/*/domain/` importa Flutter ou Drift | arquitetura | `test/architecture/layering_test.dart` |
+| V-06 | `DatabaseKey.generate()` produz 32 bytes, hex válido, e duas gerações diferem | unidade | `test/core/security/database_key_test.dart` |
+| V-07 | `toString()` da chave não contém o material | unidade | `test/core/security/database_key_test.dart` |
+| V-08 | `fromBytes` rejeita tamanho ≠ 32; `fromHex` rejeita não-hex | unidade | `test/core/security/database_key_test.dart` |
+| V-09 | `getOrCreate` gera na 1ª chamada e devolve a mesma na 2ª | unidade | `test/core/security/keystore_database_key_store_test.dart` |
+| V-10 | Valor corrompido no storage vira `KeyCorrupted`, não crash | unidade | `test/core/security/keystore_database_key_store_test.dart` |
+| V-11 | `destroy()` apaga; o `getOrCreate` seguinte gera chave diferente | unidade | `test/core/security/keystore_database_key_store_test.dart` |
+| V-12 | `AndroidOptions.encryptedSharedPreferences` está ligado | unidade | `test/core/security/keystore_database_key_store_test.dart` |
+| V-13 | **`PRAGMA cipher_version` não é vazio** — SQLCipher realmente ativo (CA-2) | integração | `test/core/database/sqlcipher_active_test.dart` |
+| V-14 | Biblioteca sem SQLCipher produz `SqlCipherUnavailable`, não sucesso silencioso | integração | `test/core/database/sqlcipher_active_test.dart` |
+| V-15 | Escreve, fecha, reabre com a chave certa e lê de volta | integração | `test/core/database/encryption_at_rest_test.dart` |
+| V-16 | Reabrir **sem** chave falha (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
+| V-17 | Reabrir com chave **errada** falha (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
+| V-18 | Descrição-marcador gravada **não** aparece nos bytes do arquivo (CA-3) | integração | `test/core/database/encryption_at_rest_test.dart` |
+| V-19 | Banco novo tem as 8 tabelas e `schemaVersion == 1` | integração | `test/core/database/schema_v1_test.dart` |
+| V-20 | `CHECK (amount_cents > 0)` rejeita 0 e negativo | integração | `test/core/database/schema_v1_test.dart` |
+| V-21 | `UNIQUE (debt_id, number)` rejeita parcela duplicada | integração | `test/core/database/schema_v1_test.dart` |
+| V-22 | Os 3 índices existem e são parciais (`WHERE deleted_at IS NULL`) | integração | `test/core/database/schema_v1_test.dart` |
+| V-23 | `PRAGMA foreign_keys` está ON após `beforeOpen` | integração | `test/core/database/schema_v1_test.dart` |
+| V-24 | `onUpgrade` de v1 para v2 lança em vez de aceitar em silêncio | integração | `test/core/database/schema_v1_test.dart` |
+| V-25 | `sqlite_master` bate com o golden `test/fixtures/schema_v1.sql` | golden | `test/core/database/schema_snapshot_test.dart` |
+| V-26 | 7 nichos semeados, ids e `sort_order` 1..7 corretos | integração | `test/core/database/niche_seed_test.dart` |
+| V-27 | 5 nichos `expense`, 1 `investment`, 1 `debt` | integração | `test/core/database/niche_seed_test.dart` |
+| V-28 | Seed rodado duas vezes não duplica | integração | `test/core/database/niche_seed_test.dart` |
+| V-29 | `appDatabaseProvider` em erro renderiza a tela de falha, não a Home | widget | `test/app/bootstrap_gate_test.dart` |
+| V-30 | A tela de falha não exibe a chave nem o caminho do banco | widget | `test/app/bootstrap_gate_test.dart` |
+| V-31 | Tema M3 ativo, claro e escuro, com fallback quando não há cor dinâmica | widget | `test/app/theme_test.dart` |
+| V-32 | As 4 rotas resolvem e cada aba mostra seu estado vazio | widget | `test/app/router_test.dart` |
+| V-33 | O FAB está presente nas 4 abas e a troca de aba preserva a pilha | widget | `test/app/router_test.dart` |
+| V-34 | Alvos de toque das abas e do FAB ≥ 48dp | widget | `test/app/router_test.dart` |
+| V-35 | CI reprova APK com `INTERNET` (fixture negativa) | script CI | `tool/ci/check_manifest.sh` |
+| V-36 | CI reprova APK com `allowBackup="true"` (fixture negativa) | script CI | `tool/ci/check_manifest.sh` |
+| V-37 | CI reprova permissão fora do baseline versionado | script CI | `tool/ci/check_manifest.sh` |
+| V-38 | CI reprova log de valor monetário fora de bloco de debug | script CI | `tool/ci/check_logs.sh` |
+| V-39 | CI reprova `toHex()` da chave fora dos dois pontos autorizados | script CI | `tool/ci/check_logs.sh` |
+| V-40 | `Result.fold` chama o ramo certo em `Ok` e em `Err` | unidade | `test/core/result/result_test.dart` |
+| V-41 | `flutter analyze` e `dart format --set-exit-if-changed` passam limpos | comando | `.github/workflows/ci.yml` |
+| V-42 | `appDatabaseProvider` pede a chave ao store e abre o banco com ela | unidade | `test/app/providers_test.dart` |
+
+Cobertura mínima da seção 5.8 do guarda-chuva (90% domínio / 80% integração) **não se
+aplica a este ADR**: não há camada de domínio ainda. A trava de cobertura entra no
+ADR-2, junto com o primeiro código de regra de negócio.
+
+## 9. Fora do escopo técnico
+
+O que alguém razoável esperaria encontrar aqui e não vai:
+
+- **Nenhum DAO, nenhum repositório, nenhuma query.** O schema existe; ninguém o lê.
+- **`Money` e `Period`.** Nascem no ADR-2 e no ADR-3, com os testes de fronteira que a
+  seção 5.4 do guarda-chuva exige.
+- **Build de release, assinatura, R8, ofuscação** — e portanto a trava RNF-14 #3.
+- **`local_auth`, `cryptography`, Argon2id.** Não entram nem no `pubspec.yaml`: uma
+  dependência que ninguém usa é superfície de ataque de graça (seção 6.6).
+- **`integration_test` em aparelho.** As 5 jornadas e2e da seção 5.8 são do M6.
+- **Benchmark do RNF-11.** Sem query agregada e sem 10.000 transações, não há o que medir.
+
+## 10. Rastreabilidade
+
+| Requisito (PRD do ADR §4) | Onde é implementado | Testes que provam |
+|---|---|---|
+| SEG-1 | `database_key.dart`, `keystore_database_key_store.dart`, `open_encrypted_database.dart`, `sqlcipher_loader.dart` | V-06 a V-18 |
+| SEG-4 | `AndroidManifest.xml`, `res/xml/data_extraction_rules.xml`, `backup_rules.xml` | V-02, V-03, V-36 |
+| SEG-5 | `AndroidManifest.xml`, `pubspec.yaml` | V-02, V-35, V-37 |
+| SEG-6 (parcial) | `main.dart`, `tool/ci/check_logs.sh` | V-38 |
+| SEG-8 (parcial) | `DatabaseKeyStore.destroy()` | V-11 |
+| RNF-1 | `android/app/build.gradle.kts` | V-01 |
+| RNF-6 | `AndroidManifest.xml` | V-02, V-35, V-37 |
+| RNF-14 (1, 2, 4) | `tool/ci/check_manifest.sh`, `tool/ci/check_logs.sh` | V-35, V-36, V-37, V-38 |
+| RNF-16 | `DatabaseKey.toString()`, `tool/ci/check_logs.sh` | V-07, V-39 |
+| RNF-9 (parcial) | `MigrationStrategy` | V-24 |
+| CA-1 | shell, rotas, telas vazias | V-32, V-33, V-34 |
+| CA-2 | `open_encrypted_database.dart` | V-13, V-14 |
+| CA-3 | `open_encrypted_database.dart` | V-16, V-17, V-18 |
+| CA-4 | `keystore_database_key_store.dart` | V-09, V-12, V-07 |
+| CA-5 | migração 1 + seed | V-19 a V-28 |
+| CA-6 | manifest + `res/xml/` | V-35, V-36 |
+| CA-7 | workflow + scripts | V-35 a V-39 |
+| CA-8 | `test/architecture/layering_test.dart` | V-05 |
+
+**Cobertura: 11 requisitos, 11 rastreados, 11 com teste nomeado. 8 critérios de aceite,
+8 rastreados.** Nada da seção 4 do PRD ficou sem destino.
+
+➡️ **TASK liberada.**

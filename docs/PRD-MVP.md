@@ -966,7 +966,7 @@ existe depois do `SPEC.md`, que só existe depois do `PRD.md`.
 
 | Marco | Entrega | Semanas | Critério de saída |
 |---|---|---|---|
-| **M0** | Setup: projeto Flutter, Drift **sobre SQLCipher**, chave no Keystore, Riverpod, go_router, tema M3, manifest sem permissões e com `allowBackup=false`, CI com as travas de segurança (RNF-14), seed dos nichos | 1,5 | CI verde; banco extraído do emulador não abre sem a chave (SEG-1) |
+| **M0** | Setup: projeto Flutter, Drift **sobre SQLCipher**, chave no Keystore, Riverpod, go_router, tema M3, manifest sem permissões e com `allowBackup=false`, CI com as travas de segurança (RNF-14), seed dos nichos | 1,5 | CI verde; `PRAGMA cipher_version` não vazio e banco sem a chave (ou com chave errada) não abre, provado por teste automatizado (SEG-1); extração via `adb` no checklist manual do marco — ver [`adr-1/PRD.md`](adr-1/PRD.md), CA-3 |
 | **M1** | Núcleo: modelo de dados, formulário de lançamento, tela genérica de nicho, CRUD com desfazer | 2 | Consigo registrar e ver gastos nos 5 nichos |
 | **M2** | Home: seletor de período, cartão de resumo, distribuição, gráfico de evolução, estados vazios | 2 | RF-1 a RF-6 aceitos; M3 (10s) medido |
 | **M3** | Renda: fontes, recebimentos, previsto/não confirmado | 1 | RF-15 a RF-18 aceitos |

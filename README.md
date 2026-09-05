@@ -13,7 +13,8 @@ backend, sem rede — o app não declara nem a permissão `INTERNET`.
 |---|---|
 | [`docs/PRD-MVP.md`](docs/PRD-MVP.md) | PRD completo do MVP — visão de produto, requisitos funcionais com critérios de aceite, arquitetura, modelo de dados, roadmap e riscos |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Registro de decisões: o que foi decidido, o que foi descartado e quem decidiu |
-| `docs/adr-N/` | Uma pasta por fatia de entrega, com `PRD.md`, `SPEC.md` e `TASK.md` — ver abaixo |
+| [`docs/adr-1/`](docs/adr-1/) | **ADR-1 — Fundação segura** (marco M0): [PRD](docs/adr-1/PRD.md) · [SPEC](docs/adr-1/SPEC.md) · [TASK](docs/adr-1/TASK.md) — 46 tasks, cada uma com seu teste |
+| `docs/adr-N/` | Demais fatias de entrega, mesmo formato — ver abaixo |
 
 ## Stack
 
@@ -40,9 +41,10 @@ Detalhes, modelo de ameaças e testes: **seção 6 do PRD**.
 
 ## Estado
 
-📋 Fase de especificação. Nenhum código ainda. Próximo passo é o **`adr-1`** (marco M0
-do roadmap): setup do projeto, banco cifrado e CI com as travas de segurança — começando
-pelo `docs/adr-1/PRD.md`.
+📋 Fase de especificação. Nenhum código ainda. O **[`adr-1`](docs/adr-1/)** (marco M0)
+está documentado de ponta a ponta — PRD, spec técnica e 46 tasks numeradas — e é o
+próximo a ser executado: projeto Flutter, banco cifrado, chave no Keystore, casca
+navegável e CI com as travas de segurança.
 
 ## Como uma solução vira código
 
