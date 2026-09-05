@@ -58,4 +58,9 @@ final class DatabaseKey {
   /// build se `toHex()` aparecer em qualquer outro arquivo (RNF-16).
   String toHex() =>
       _bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+  /// SEMPRE redigido. Nunca o material — nem em debug, nem em interpolação de
+  /// string, nem em mensagem de exceção que carregue este objeto (RNF-16).
+  @override
+  String toString() => 'DatabaseKey(<redigida>)';
 }

@@ -29,6 +29,15 @@ void main() {
     });
   });
 
+  group('DatabaseKey.toString', () {
+    test('nunca contém o material da chave', () {
+      final key = DatabaseKey.generate();
+      final interpolated = 'chave gerada: $key';
+      expect(interpolated.contains(key.toHex()), isFalse);
+      expect(key.toString(), 'DatabaseKey(<redigida>)');
+    });
+  });
+
   group('DatabaseKey.fromBytes', () {
     test('aceita exatamente 32 bytes', () {
       final bytes = Uint8List(32);
