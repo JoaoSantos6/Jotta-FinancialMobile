@@ -22,8 +22,13 @@ perguntada e respondida. Alterar uma linha significa reabrir o PRD.
 | 2026-09-05 | **Auto Backup do Android desativado** (`allowBackup=false` + regras de extração negando cloud e device-transfer) | Manter ligado com banco cifrado; manter o padrão do Android | Usuário |
 | 2026-09-05 | Chave do banco **não** amarrada à biometria (`setUserAuthenticationRequired(false)`); a biometria é portão de UI, não de dado | Amarrar a chave à autenticação do usuário | Claude (amarrar quebraria abertura sem digital cadastrada e geração de recorrências) |
 | 2026-09-05 | `FLAG_SECURE` (bloquear screenshot / ocultar em recentes) **fora do MVP** — foi oferecido junto com o bloqueio e não foi selecionado | Incluir no MVP | Usuário (por não-seleção — **reconfirmar antes de M5**) |
-
 | 2026-09-05 | Subagent `judge` isolado (só `Read`/`Grep`, apenas os caminhos passados) entregando laudo no chat; definição do agente cabe em 20 linhas | Agente com acesso ao projeto inteiro; laudo gravado em `docs/reviews/`; flag `--save` | Usuário |
+| 2026-09-05 | Toda solução ganha `docs/adr-N/` com **PRD.md, SPEC.md e TASK.md**, nessa ordem obrigatória de dependência | Documento único por solução; spec direto no código; tasks derivadas de conversa | Usuário |
+| 2026-09-05 | **Um ADR = um marco do roadmap** (adr-1=M0 … adr-7=M6) | Um ADR por tela/feature; um ADR por decisão de arquitetura clássica | Usuário |
+| 2026-09-05 | `docs/PRD-MVP.md` permanece como **guarda-chuva** fora dos ADRs; cada `adr-N/PRD.md` recorta e referencia, não repete | Virar `adr-0/PRD.md`; ser fatiado e deixar de existir | Usuário |
+| 2026-09-05 | Task = **um commit, um teste**. Nenhuma task fecha sem validação automatizada que falhe antes e passe depois | Task de meio dia a um dia; fatia vertical fim-a-fim validada por e2e | Usuário |
+| 2026-09-05 | Skills `to-prd`, `to-spec` e `to-task` **travam a cadeia**: `to-spec` para se faltar o PRD, `to-task` para se faltar a SPEC | Skill única gerando os três; travas por convenção, sem verificação | Usuário |
+| 2026-09-05 | Pasta nomeada `adr-N` sem slug (`docs/adr-1/`), numeração sequencial nunca reciclada | `adr-001-setup-seguro` com slug descritivo | Claude (segue literalmente o formato pedido; slug duplicaria o título do PRD) |
 
 ## Em aberto (perguntar antes de implementar)
 

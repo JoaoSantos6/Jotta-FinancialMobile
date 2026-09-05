@@ -13,6 +13,7 @@ backend, sem rede — o app não declara nem a permissão `INTERNET`.
 |---|---|
 | [`docs/PRD-MVP.md`](docs/PRD-MVP.md) | PRD completo do MVP — visão de produto, requisitos funcionais com critérios de aceite, arquitetura, modelo de dados, roadmap e riscos |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Registro de decisões: o que foi decidido, o que foi descartado e quem decidiu |
+| `docs/adr-N/` | Uma pasta por fatia de entrega, com `PRD.md`, `SPEC.md` e `TASK.md` — ver abaixo |
 
 ## Stack
 
@@ -39,9 +40,34 @@ Detalhes, modelo de ameaças e testes: **seção 6 do PRD**.
 
 ## Estado
 
-📋 Fase de especificação. Nenhum código ainda. Próximo passo é o marco **M0** do
-roadmap (seção 8 do PRD): setup do projeto, banco cifrado e CI com as travas de
-segurança.
+📋 Fase de especificação. Nenhum código ainda. Próximo passo é o **`adr-1`** (marco M0
+do roadmap): setup do projeto, banco cifrado e CI com as travas de segurança — começando
+pelo `docs/adr-1/PRD.md`.
+
+## Como uma solução vira código
+
+Nada é implementado direto. Toda fatia de entrega — aqui chamada de **ADR** — passa por
+três documentos, em `docs/adr-N/`, nesta ordem e sem pular etapa:
+
+```
+docs/adr-N/PRD.md   → por que existe, o que precisa ser verdade no fim
+      ↓
+docs/adr-N/SPEC.md  → como se constrói: camadas, arquivos, contratos, migrations, testes
+      ↓
+docs/adr-N/TASK.md  → tasks numeradas, uma por commit, cada uma com um teste que a prova
+```
+
+**A dependência é travada, não é convenção:** a skill `to-spec` para se não achar o
+`PRD.md`, e a `to-task` para se não achar o `SPEC.md`. Documento sem o anterior não é
+documento adiantado — é documento escrito no escuro.
+
+Um ADR corresponde a **um marco do roadmap** (seção 8 do PRD): `adr-1` = M0, `adr-2` = M1,
+até `adr-7` = M6. O `docs/PRD-MVP.md` continua sendo o guarda-chuva do produto inteiro;
+cada `adr-N/PRD.md` recorta dele e referencia, em vez de repetir.
+
+> **Nota sobre o nome:** "ADR" aqui é a unidade de entrega, não o *Architecture Decision
+> Record* clássico. Decisões de arquitetura continuam morando em
+> [`docs/DECISIONS.md`](docs/DECISIONS.md), uma linha por decisão.
 
 ## Ferramentas do repositório
 
@@ -55,6 +81,21 @@ ambíguo, uma regra de negócio faltando ou uma decisão de produto sem dono, o 
 Toda resposta vira uma linha em `docs/DECISIONS.md`.
 
 Perguntas ainda em aberto estão na seção 12 do PRD.
+
+### `to-prd`, `to-spec`, `to-task` — skills da cadeia de documentação
+
+[`.claude/skills/to-prd`](.claude/skills/to-prd/SKILL.md) ·
+[`.claude/skills/to-spec`](.claude/skills/to-spec/SKILL.md) ·
+[`.claude/skills/to-task`](.claude/skills/to-task/SKILL.md)
+
+Uma skill por elo da cadeia acima. Cada uma sabe o que o documento precisa conter, e
+recusa rodar sem o anterior.
+
+A regra que dá sentido à `to-task`: **task sem validação automatizada não é task.** Não
+vale "eu conferi" nem "abri o app e vi funcionando" — vale um comando que falha antes e
+passa depois. Inclusive para o que parece não-testável: `allowBackup="false"` se prova
+com um teste que faz parse do manifest, e SQLCipher se prova com um teste que tenta abrir
+o banco com a senha errada e exige a falha.
 
 ### `/judge` — subagent auditor
 

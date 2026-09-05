@@ -959,6 +959,11 @@ Ajustes ──▶ exportar backup
 
 Estimativas para **um desenvolvedor**, em semanas de trabalho.
 
+Cada marco é uma fatia de entrega e ganha sua própria pasta em `docs/`, com PRD, spec e
+tasks: **M0 = `docs/adr-1/`**, M1 = `adr-2/`, e assim por diante até M6 = `adr-7/`.
+Nenhum marco começa a ser implementado antes de `adr-N/TASK.md` existir — e ele só
+existe depois do `SPEC.md`, que só existe depois do `PRD.md`.
+
 | Marco | Entrega | Semanas | Critério de saída |
 |---|---|---|---|
 | **M0** | Setup: projeto Flutter, Drift **sobre SQLCipher**, chave no Keystore, Riverpod, go_router, tema M3, manifest sem permissões e com `allowBackup=false`, CI com as travas de segurança (RNF-14), seed dos nichos | 1,5 | CI verde; banco extraído do emulador não abre sem a chave (SEG-1) |
