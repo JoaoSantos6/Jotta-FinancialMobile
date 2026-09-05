@@ -441,12 +441,24 @@ pelo `dynamicColorScheme` quando o aparelho oferece (`dynamic_color`), claro e e
 | **SEG-8** (parcial) | Chave nasce aqui; `destroy()` existe como primitiva. O RF-29 que a usa é do M5 | 5.2 |
 | **RNF-16** | `DatabaseKey.toString()` redigido + `grep` de CI por `toHex()` fora dos dois pontos autorizados | 5.1 |
 
-`setUserAuthenticationRequired(false)` é o padrão do `flutter_secure_storage` e é o
-comportamento desejado (SEG-1 do guarda-chuva): não há o que configurar, e **não há
-teste que o afirme** — a `AndroidOptions` da dependência não expõe essa flag para
-inspeção. O que V-12 fixa é `encryptedSharedPreferences`, que é o que dá para verificar.
-Se uma versão futura da dependência passar a exigir autenticação por padrão, quem pega
-isso é o app deixando de abrir, não a suíte. Limitação conhecida desta fatia.
+**Emenda de 2026-09-05, na implementação:** o texto original desta seção dizia que
+não havia como testar `setUserAuthenticationRequired(false)`, porque a `AndroidOptions`
+da dependência não expunha a flag. Isso valia para a API assumida ao escrever a SPEC;
+a versão travada de fato (`flutter_secure_storage` 11.0.0) **redesenhou** essa API:
+
+- O parâmetro `encryptedSharedPreferences` não existe mais — o construtor padrão de
+  `AndroidOptions` já faz o equivalente (AES-GCM com chave embrulhada no Keystore) sem
+  opt-in nenhum. V-12 mudou de alvo por isso.
+- No lugar, `enforceBiometrics` (default `false`) é **documentado pela própria
+  dependência** como controlando exatamente isso: `false` gera a chave com
+  `setUserAuthenticationRequired(false)`; `true` gera com `true`. E `AndroidOptions`
+  ganhou um `toMap()` **público**, que expõe o valor como string.
+
+Resultado: o que a versão anterior chamava de "limitação conhecida, sem teste possível"
+passou a ser diretamente verificável. `FlutterSecureKeyValueStore.androidOptions` é uma
+constante pública com `enforceBiometrics: false` explícito (não só herdado do default),
+e V-12 lê `toMap()['enforceBiometrics']` e exige `'false'`. Se uma versão futura da
+dependência mudar esse default, ou se alguém mudar nosso valor por engano, o teste pega.
 
 ## 8. Estratégia de testes
 
