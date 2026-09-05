@@ -172,7 +172,7 @@ começar antes do `adr-1/TASK.md` estar fechado.
 | # | Risco | Impacto | Mitigação |
 |---|---|---|---|
 | A1 | SQLCipher cair silenciosamente para SQLite puro — o `PRAGMA key` é aceito e ignorado quando a biblioteca carregada é a do sistema. É a falha mais perigosa deste ADR porque **não aparece**: tudo funciona, e o banco está em claro | Fatal | CA-2 e CA-3 são testes, não inspeção. `cipher_version` vazio reprova o build |
-| A2 | `libsqlcipher` na CI Linux divergir da biblioteca embarcada no APK Android, fazendo o teste passar no desktop e o app falhar no aparelho | Alto | Versão da lib fixada nos dois lados — **e essa paridade ainda não foi verificada**: depende de o repositório da distro oferecer a mesma versão que o `sqlcipher_flutter_libs` embarca. Confirmar na T-41. A verificação no aparelho, no checklist manual, é a rede de segurança |
+| ~~A2~~ | ~~`libsqlcipher` na CI Linux divergir da biblioteca embarcada no APK Android~~ | ~~Alto~~ | **Fechado na implementação.** `sqlcipher_flutter_libs` estava EOL; a migração para o hook nativo do `sqlite3` 3.x faz Linux e Android baixarem **o mesmo binário** assinado, verificado por sha256 e atestação SLSA3. Não há mais dois lugares para divergir — `docs/DECISIONS.md` |
 | A3 | `applicationId` mudar depois da primeira instalação com dado real — reinstalar apaga um banco que é irrecuperável | Fatal | Decidido e travado agora, com teste de configuração (T-01) |
 | A4 | Dependência transitiva reintroduzir `allowBackup="true"` ou uma permissão via merge de manifest | Alto | Trava de CI lê o manifest **merged do APK**, não o arquivo-fonte |
 | A5 | Escopo do M0 crescer para "só mais uma telinha" e virar o M1 disfarçado | Médio | Lista do que está fora (seção 3), e nenhum RF na seção 4 |

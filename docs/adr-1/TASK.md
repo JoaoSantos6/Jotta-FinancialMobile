@@ -121,8 +121,9 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 - **Spec:** §2, guarda-chuva §6.6
 - **Faz:** declara as dependências deste ADR — `drift`, `sqlite3`,
-  `sqlcipher_flutter_libs`, `flutter_secure_storage`, `riverpod`, `go_router`,
-  `dynamic_color` — todas com versão exata, e comita o `pubspec.lock`.
+  `flutter_secure_storage`, `path_provider`, `flutter_riverpod`, `riverpod_annotation`,
+  `go_router`, `dynamic_color` — todas com versão exata, comita o `pubspec.lock`, e
+  configura `hooks.user_defines.sqlite3.source: sqlcipher` (ver nota abaixo).
 - **Arquivos:** `pubspec.yaml`, `pubspec.lock`, `test/config/pubspec_pinning_test.dart` [novo]
 - **Validação:** `flutter test test/config/pubspec_pinning_test.dart` — config — **V-04** —
   falha se qualquer dependência da lista sensível (cripto, banco, segredos) usar `^`,
@@ -132,6 +133,9 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 > `local_auth` e `cryptography` **não** entram aqui. São do M5, e dependência não usada
 > é superfície de ataque de graça.
+>
+> **`sqlcipher_flutter_libs` também não entra** — está EOL no pub.dev. O binário
+> SQLCipher vem do hook do próprio `sqlite3` (`docs/DECISIONS.md`, SPEC §5.4).
 
 ### T-05 — Lint e formatação
 
@@ -259,21 +263,25 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 ## Bloco C — Banco cifrado
 
-### T-14 — SQLCipher carregado e ativo
+### T-14 — SQLCipher resolvido pelo hook e ativo
 
 - **Spec:** §5.4
-- **Faz:** adiciona `sqlcipher_flutter_libs` e escreve o `sqlcipher_loader`, com
-  `open.overrideFor` apontando para `libsqlcipher.so` no Linux.
-- **Arquivos:** `lib/core/database/sqlcipher_loader.dart` [novo],
-  `test/core/database/sqlcipher_active_test.dart` [novo]
+- **Faz:** confirma o hook `sqlite3` (configurado na T-04) baixando e vinculando o
+  binário SQLCipher na primeira execução dos testes de banco. Não há loader para
+  escrever: a resolução é declarativa, no `pubspec.yaml`.
+- **Arquivos:** `test/core/database/sqlcipher_active_test.dart` [novo]
 - **Validação:** `flutter test test/core/database/sqlcipher_active_test.dart` —
   integração — **V-13** — abre um banco temporário e exige que
   `PRAGMA cipher_version` devolva string **não vazia**.
-- **Pronto quando:** o teste passa localmente com `libsqlcipher-dev` instalado.
+- **Pronto quando:** o teste passa. Na primeira execução, o hook baixa o binário (uma
+  vez, fica em cache local); nas seguintes, usa o cache.
 - **Depende de:** T-04, T-06
 
-> **A task mais importante deste ADR.** Sem ela, `PRAGMA key` é aceito e ignorado pela
-> SQLite do sistema, o banco fica em claro e absolutamente nada avisa (risco A1).
+> **A task mais importante deste ADR.** Sem o hook corretamente configurado,
+> `PRAGMA key` é aceito e ignorado pela SQLite comum, o banco fica em claro e
+> absolutamente nada avisa (risco A1). E aqui o hook resolve o **mesmo** binário em
+> qualquer plataforma — Linux (este teste) e Android (o app de verdade) — o que
+> elimina o risco A2 por construção, em vez de mitigá-lo com checklist manual.
 
 ### T-15 — `openEncryptedDatabase` e `SqlCipherUnavailable`
 
@@ -282,9 +290,11 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   verificação, com as duas exceções tipadas.
 - **Arquivos:** `lib/core/database/open_encrypted_database.dart` [novo],
   `test/core/database/sqlcipher_active_test.dart` [altera]
-- **Validação:** mesmo comando — integração — **V-14** — forçando o loader a usar a
-  SQLite **sem** SQLCipher, a abertura lança `SqlCipherUnavailable` em vez de devolver
-  um banco em claro.
+- **Validação:** mesmo comando — integração — **V-14** — com um `CommonDatabase` falso
+  (mocktail) cujo `PRAGMA cipher_version` devolve vazio, `openEncryptedDatabase` lança
+  `SqlCipherUnavailable` em vez de devolver o banco. Não dá mais para forçar isso com um
+  binário real trocado em runtime — o hook fixa o binário no build inteiro — então o
+  teste isola a *decisão* (o `if` que olha o resultado do PRAGMA) do binário em si.
 - **Pronto quando:** o teste passa nos dois cenários (com e sem SQLCipher).
 - **Depende de:** T-08, T-14
 

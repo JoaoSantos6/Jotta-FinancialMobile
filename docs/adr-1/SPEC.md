@@ -28,7 +28,8 @@ estratégia de teste deste ADR gira em torno de provar que isso não aconteceu.
 |---|---|---|
 | `applicationId` = `com.jotta.financial` | `br.com.joaosantos.jotta`; `com.jottafinancial.app` | Decisão do usuário. Trava agora porque mudar depois da 1ª instalação com dado real apaga um banco irrecuperável |
 | Chave passada como **raw key hex**: `PRAGMA key = "x'<64 hex>'"` | Passar a chave como texto e deixar o SQLCipher rodar PBKDF2 por cima | A chave já tem 256 bits de entropia de CSPRNG. Derivar de novo custa tempo de abertura e não acrescenta segurança |
-| Prova do SEG-1 roda no **desktop**, na CI, com `libsqlcipher` do sistema | Emulador Android no pipeline | Decisão do usuário. Vale minutos por push em vez de 10-15 min e sem a fragilidade do emulador. O risco A2 do PRD é o preço |
+| SQLCipher via **hooks nativos do `sqlite3` 3.x** (`hooks.user_defines.sqlite3.source: sqlcipher` no pubspec) | `package:sqlcipher_flutter_libs` | **Emenda de 2026-09-05, na implementação:** `sqlcipher_flutter_libs` está EOL no pub.dev ("Not used anymore, update to version 3.x of package:sqlite3 instead"). O hook baixa, para **qualquer plataforma que rodar o app ou o teste**, o mesmo build de SQLCipher community edition dos releases assinados do pacote — verificado por sha256 embutido no código Dart e, na versão travada (3.5.2), por atestação SLSA3. Testado neste ambiente: `PRAGMA cipher_version` devolveu `4.18.0 community` |
+| Prova do SEG-1 roda no **desktop**, com o SQLCipher baixado pelo hook — **o mesmo binário que o Android usaria**, não mais uma lib do sistema operacional | Emulador Android no pipeline; `libsqlcipher-dev` do apt do runner Linux | Decisão original do usuário (desktop em vez de emulador) preservada; o **mecanismo** mudou. Antes disso, CI e Android usariam dois binários de SQLCipher diferentes (risco A2, mitigado por checklist manual). O hook os torna o **mesmo arquivo**: o risco deixa de existir, em vez de ser mitigado |
 | Schema **v1 completo** na migração 1, com as 10 tabelas | Criar cada tabela no ADR que a consome | Migração é global e barata de fazer de uma vez; fatiar cria 6 migrações para chegar no mesmo lugar, cada uma com risco de perda de dados |
 | Seed dos nichos no `onCreate` da migração, não em código de app | Semear na primeira abertura da Home | O seed é parte do schema: um banco sem os 7 nichos é um banco inválido, não um banco vazio |
 | `DatabaseKey` é um tipo próprio com `toString()` redigido | Passar a chave como `String` | `String` cru aparece em log, em mensagem de exceção e em `toString()` de objeto que a contenha. RNF-16 vira estrutural em vez de disciplina |
@@ -76,7 +77,6 @@ lib/
 │   └── database/
 │       ├── app_database.dart                  [novo]   @DriftDatabase, schemaVersion 1
 │       ├── open_encrypted_database.dart       [novo]   PRAGMA key + verificação
-│       ├── sqlcipher_loader.dart              [novo]   override de open por plataforma
 │       ├── database_location.dart            [novo]   caminho de jotta.db
 │       ├── providers.dart                    [novo]   databaseKeyStore, appDatabase
 │       ├── normalize.dart                     [novo]   minúscula + sem acento (RF-14)
@@ -245,16 +245,27 @@ processo e a chamada acontece uma vez, no bootstrap, antes de qualquer UI.
 ### 5.3 `openEncryptedDatabase` — `core/database/open_encrypted_database.dart`
 
 ```dart
+typedef DatabaseOpener = CommonDatabase Function(String path);
+
 /// Abre [file] cifrado com [key] e prova que o SQLCipher está de fato ativo.
 ///
 /// Ordem obrigatória: PRAGMA key ANTES de qualquer outra instrução. Um SELECT
 /// antes do key faz o SQLCipher marcar o banco como não-cifrado nesta conexão.
 ///
+/// [open] é um ponto de injeção para teste — por padrão é `sqlite3.open`, que usa
+/// o binário resolvido pelo hook (§5.4). Um teste pode passar um `CommonDatabase`
+/// falso para provar o [SqlCipherUnavailable] sem depender de um binário diferente
+/// existir em tempo de execução.
+///
 /// Lança [SqlCipherUnavailable] se `PRAGMA cipher_version` vier vazio — o caso em
 /// que a lib carregada é SQLite puro, o PRAGMA key foi ignorado e o banco estaria
 /// em claro sem nenhum erro visível.
 /// Lança [DatabaseLocked] se a chave não abrir o arquivo.
-QueryExecutor openEncryptedDatabase({required File file, required DatabaseKey key});
+CommonDatabase openEncryptedDatabase({
+  required File file,
+  required DatabaseKey key,
+  DatabaseOpener open = sqlite3.open,
+});
 ```
 
 Sequência no `setup` do `NativeDatabase`:
@@ -266,19 +277,30 @@ Sequência no `setup` do `NativeDatabase`:
 O passo 3 é o que transforma "chave errada" em erro imediato no bootstrap, em vez de
 uma exceção obscura na primeira query da Home.
 
-### 5.4 `sqlcipherLoader` — `core/database/sqlcipher_loader.dart`
+### 5.4 Resolução do binário SQLCipher — `pubspec.yaml`, sem código
 
-Resolve qual biblioteca nativa o `sqlite3` do Dart carrega:
+**Não existe `sqlcipherLoader`.** A versão original desta seção descrevia um
+`open.overrideFor` manual, escolhendo `sqlcipher_flutter_libs` no Android e
+`libsqlcipher.so` do sistema no Linux — dois binários diferentes, o que era
+precisamente o risco A2 do PRD. `sqlcipher_flutter_libs` está **EOL**
+(`docs/DECISIONS.md`), e o `sqlite3` 3.x resolve o binário nativo sozinho, em
+qualquer plataforma, via *native asset hooks* — declarativo, sem `DynamicLibrary`:
 
-| Plataforma | Origem |
-|---|---|
-| Android | `sqlcipher_flutter_libs` (embarcada no APK) |
-| Linux (CI e dev) | `libsqlcipher.so` do sistema, via `open.overrideFor` |
+```yaml
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher
+```
 
-Sem o override, o teste no Linux carrega a SQLite do sistema, o `PRAGMA key` é ignorado
-e o teste do CA-3 falharia — corretamente. É por isso que a verificação do
-`cipher_version` (CA-2) precisa existir separada: ela distingue "cifra quebrada" de
-"biblioteca errada carregada".
+Com isso, `sqlite3.open(path)` já abre contra SQLCipher em Android, em Linux (testes
+e CI) e em qualquer outra plataforma que rodar o hook — **o mesmo arquivo binário**,
+baixado dos releases assinados do pacote `sqlite3.dart` e verificado por sha256 (e,
+na versão travada, por atestação SLSA3). Não há mais dois lugares para divergir.
+
+Consequência para o teste do CA-2/CA-3: `PRAGMA cipher_version` continua sendo a
+prova de que a cifra está ativa, mas agora não distingue mais "plataforma de teste"
+de "plataforma de produção" — é a mesma pergunta, no mesmo binário, nos dois casos.
 
 ### 5.5 `AppDatabase` — `core/database/app_database.dart`
 
@@ -502,7 +524,7 @@ O que alguém razoável esperaria encontrar aqui e não vai:
 
 | Requisito (PRD do ADR §4) | Onde é implementado | Testes que provam |
 |---|---|---|
-| SEG-1 | `database_key.dart`, `keystore_database_key_store.dart`, `open_encrypted_database.dart`, `sqlcipher_loader.dart`, `database_location.dart` | V-06 a V-18, V-43 |
+| SEG-1 | `database_key.dart`, `keystore_database_key_store.dart`, `open_encrypted_database.dart`, `pubspec.yaml` (hook `sqlite3`), `database_location.dart` | V-06 a V-18, V-43 |
 | SEG-4 | `AndroidManifest.xml`, `res/xml/data_extraction_rules.xml`, `backup_rules.xml` | V-02, V-03, V-36 |
 | SEG-5 | `AndroidManifest.xml`, `pubspec.yaml` | V-02, V-35, V-37 |
 | SEG-6 (parcial) | `app/logging.dart`, `tool/ci/check_logs.sh`, schema do `error_log` | V-44, V-38, V-48 |
