@@ -23,6 +23,8 @@ perguntada e respondida. Alterar uma linha significa reabrir o PRD.
 | 2026-09-05 | Chave do banco **não** amarrada à biometria (`setUserAuthenticationRequired(false)`); a biometria é portão de UI, não de dado | Amarrar a chave à autenticação do usuário | Claude (amarrar quebraria abertura sem digital cadastrada e geração de recorrências) |
 | 2026-09-05 | `FLAG_SECURE` (bloquear screenshot / ocultar em recentes) **fora do MVP** — foi oferecido junto com o bloqueio e não foi selecionado | Incluir no MVP | Usuário (por não-seleção — **reconfirmar antes de M5**) |
 
+| 2026-09-05 | Subagent `judge` isolado (só `Read`/`Grep`, apenas os caminhos passados) entregando laudo no chat; definição do agente cabe em 20 linhas | Agente com acesso ao projeto inteiro; laudo gravado em `docs/reviews/`; flag `--save` | Usuário |
+
 ## Em aberto (perguntar antes de implementar)
 
 - Comportamento do app na virada de mês para lançamentos recorrentes: gerar automático ou sugerir?

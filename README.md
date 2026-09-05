@@ -43,9 +43,11 @@ Detalhes, modelo de ameaças e testes: **seção 6 do PRD**.
 roadmap (seção 8 do PRD): setup do projeto, banco cifrado e CI com as travas de
 segurança.
 
-## Regra de trabalho: `grillme`
+## Ferramentas do repositório
 
-Este repositório tem uma skill em [`.claude/skills/grillme`](.claude/skills/grillme/SKILL.md).
+### `grillme` — skill
+
+[`.claude/skills/grillme`](.claude/skills/grillme/SKILL.md)
 
 A regra é simples: **suposição não documentada é bug**. Diante de um requisito
 ambíguo, uma regra de negócio faltando ou uma decisão de produto sem dono, o agente
@@ -53,3 +55,23 @@ ambíguo, uma regra de negócio faltando ou uma decisão de produto sem dono, o 
 Toda resposta vira uma linha em `docs/DECISIONS.md`.
 
 Perguntas ainda em aberto estão na seção 12 do PRD.
+
+### `/judge` — subagent auditor
+
+[`.claude/agents/judge.md`](.claude/agents/judge.md) · [`.claude/commands/judge.md`](.claude/commands/judge.md)
+
+```
+/judge docs/PRD-MVP.md docs/DECISIONS.md
+```
+
+Audita se a solução proposta se sustenta: coerência interna, coerência entre
+documentos, completude das specs, viabilidade de prazo e escopo. Devolve achados com
+severidade e um veredito — VIÁVEL / VIÁVEL COM RESSALVAS / INVIÁVEL / INSUFICIENTE.
+
+O `judge` roda **isolado de propósito**: só lê os caminhos que você passar, é
+read-only, e não recebe nem o histórico da conversa nem o resto do projeto. Ele julga o
+documento pelo que está escrito, não pelo que quem escreveu queria dizer — que é
+exatamente o ponto cego de quem acabou de redigir o texto.
+
+Para auditar coerência **entre** documentos, passe todos na mesma chamada: o que não
+for passado, ele não enxerga.
