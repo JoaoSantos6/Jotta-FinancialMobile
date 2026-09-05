@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Produto | Jotta FinancialMobile — gestão financeira pessoal por nichos de vida |
-| Versão do documento | 1.1 — acrescenta a seção 6 (Segurança de Dados) |
+| Versão do documento | 1.2 — correções da auditoria do `/judge`: mock do RF-2, schema v1 (10 tabelas), ordem do pipeline de CI, aceite do SEG-1 |
 | Data | 2026-09-05 |
 | Status | Aprovado para desenvolvimento |
 | Plataforma | Android (Flutter) |
@@ -173,7 +173,8 @@ atual.
 > caso contrário.
 
 **RF-2 · Cartão de resumo**
-Bloco superior com três números do período selecionado:
+Bloco superior com três números principais do período selecionado — Entradas, Gastos e
+Sobra — mais a linha secundária de aportes e dívidas:
 
 ```
 ┌──────────────────────────────────────┐
@@ -181,12 +182,16 @@ Bloco superior com três números do período selecionado:
 │                                      │
 │  Entradas          R$  8.400,00      │
 │  Gastos            R$  5.132,47      │
-│  ─────────────────────────────       │
-│  Sobra             R$  3.267,53      │
-│                                      │
 │  Aportes R$ 1.200  ·  Dívidas R$ 890 │
+│  ─────────────────────────────       │
+│  Sobra             R$  1.177,53      │
 └──────────────────────────────────────┘
 ```
+
+A linha de aportes e dívidas fica **acima** do traço, e isso é a regra desenhada: tudo
+que está acima entra no cálculo. Ela continua sendo secundária — menor, os dois valores
+numa linha só, sem rótulo próprio — porque não é consumo. Mas sai do caixa, e um traço
+que a deixasse de fora estaria mentindo sobre a conta.
 
 Regra de cálculo (crítica — define o que é "sobra"):
 
@@ -198,6 +203,12 @@ Regra de cálculo (crítica — define o que é "sobra"):
   quitação de passivo. Ambos saem do caixa e por isso entram no cálculo da sobra.
 - Resgate de investimento **não** conta como entrada em "Entradas"; abate os aportes
   líquidos do período.
+
+> **Correção de 2026-09-05 (v1.1):** até esta versão o mock mostrava `Sobra R$ 3.267,53`,
+> que é `8.400,00 − 5.132,47` — a subtração dos aportes e das dívidas tinha ficado de
+> fora do desenho, embora estivesse na regra, no aceite e no glossário. Achado da
+> auditoria do `/judge`. Os três textos estavam certos e concordavam entre si; o desenho
+> era o único errado, e era ele que alguém copiaria ao implementar a tela.
 
 > Aceite: Dado renda de R$ 8.400, gastos de R$ 5.132,47, aporte de R$ 1.200 e parcela
 > de R$ 890, então "Sobra" mostra R$ 1.177,53 e "Gastos" mostra R$ 5.132,47.
