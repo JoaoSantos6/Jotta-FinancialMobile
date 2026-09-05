@@ -17,7 +17,7 @@ void main() {
       ).readAsStringSync();
     });
 
-    String _valueOf(String key) {
+    String valueOf(String key) {
       final match = RegExp(
         '$key\\s*=\\s*"([^"]+)"',
       ).firstMatch(gradle);
@@ -30,11 +30,11 @@ void main() {
     }
 
     test('applicationId é com.jotta.financial', () {
-      expect(_valueOf('applicationId'), 'com.jotta.financial');
+      expect(valueOf('applicationId'), 'com.jotta.financial');
     });
 
     test('namespace é coerente com o applicationId', () {
-      expect(_valueOf('namespace'), 'com.jotta.financial');
+      expect(valueOf('namespace'), 'com.jotta.financial');
     });
 
     test('minSdk é 26 (RNF-1), não o padrão do Flutter', () {

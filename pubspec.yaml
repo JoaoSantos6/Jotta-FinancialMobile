@@ -2,6 +2,8 @@ name: financial
 description: "Jotta FinancialMobile — gestão financeira pessoal por nichos de vida."
 publish_to: 'none'
 
+# ADR-1 (docs/adr-1/), marco M0. Versões travadas de propósito: nenhuma dependência
+# de segurança ou de banco usa `^` ou `any` (guarda-chuva §6.6, ADR-1 SPEC V-04).
 version: 1.0.0+1
 
 environment:
@@ -13,12 +15,51 @@ dependencies:
 
   cupertino_icons: 1.0.9
 
+  # Persistência (SEG-1)
+  drift: 2.34.4
+  sqlite3: 3.5.2
+
+  # Chave do banco no Android Keystore (SEG-1)
+  flutter_secure_storage: 11.0.0
+
+  # Local de jotta.db, sempre no diretório privado do app
+  path_provider: 2.1.6
+
+  # Estado + DI
+  flutter_riverpod: 3.4.3
+  riverpod_annotation: 4.0.7
+
+  # Navegação
+  go_router: 18.0.1
+
+  # Tema Material You
+  dynamic_color: 2.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: 6.0.0
+  drift_dev: 2.34.6
+  build_runner: 2.16.1
+  riverpod_generator: 4.0.9
+  mocktail: 1.0.5
   xml: 7.0.1
+  yaml: 3.1.4
 
 flutter:
   uses-material-design: true
+
+# `package:sqlcipher_flutter_libs` está EOL (pub.dev: "Not used anymore, update to
+# version 3.x of package:sqlite3 instead") — decisão registrada em docs/DECISIONS.md.
+# O sqlite3 3.x resolve o binário nativo via hooks (native assets do Dart), com o
+# mesmo mecanismo em todas as plataformas: Linux (testes e CI) e Android (APK real)
+# baixam o MESMO build de SQLCipher community edition dos releases assinados do
+# pacote, verificado por sha256 embutido no código-fonte Dart e, a partir da 3.5.2
+# (a versão travada acima), por atestação SLSA nível 3. Isso elimina por construção
+# o risco A2 do ADR-1 (CI usar uma libsqlcipher e o APK embarcar outra): não há mais
+# dois binários, há um só, para toda plataforma.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher
