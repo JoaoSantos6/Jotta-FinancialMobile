@@ -30,4 +30,56 @@ void main() {
       expect(find.textContaining('Ajustes'), findsOneWidget);
     });
   });
+
+  group('T-42 — bottom nav e FAB persistente', () {
+    testWidgets('o FAB está presente nas 4 abas', (tester) async {
+      for (final location in ['/', '/nichos', '/renda', '/ajustes']) {
+        await pumpAt(tester, location);
+        expect(
+          find.byType(FloatingActionButton),
+          findsOneWidget,
+          reason: 'FAB deveria estar presente em $location',
+        );
+      }
+    });
+
+    testWidgets('tocar cada aba troca a tela visível', (tester) async {
+      await pumpAt(tester, '/');
+      expect(find.textContaining('Home'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Nichos'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Nichos'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Renda'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Renda'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Ajustes'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Ajustes'), findsOneWidget);
+    });
+
+    testWidgets(
+      'trocar de aba e voltar preserva a pilha (IndexedStack mantém montado)',
+      (tester) async {
+        await pumpAt(tester, '/');
+        expect(find.textContaining('Home'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Nichos'));
+        await tester.pumpAndSettle();
+
+        // IndexedStack mantém as abas não-visíveis montadas — a Home
+        // continua na árvore de widgets, só offstage.
+        expect(
+          find.textContaining('Home', skipOffstage: false),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byTooltip('Home'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Home'), findsOneWidget);
+      },
+    );
+  });
 }
