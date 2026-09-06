@@ -33,7 +33,7 @@ dependencies:
   go_router: 18.0.1
 
   # Tema Material You
-  dynamic_color: 2.1.0
+  dynamic_color: 1.9.0
 
 dev_dependencies:
   flutter_test:
