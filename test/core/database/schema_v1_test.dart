@@ -282,4 +282,45 @@ void main() {
       },
     );
   });
+
+  group('app_settings e fechamento do schema — T-27', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('app_settings existe como chave-valor', () async {
+      await db.customStatement(
+        "INSERT INTO app_settings (key, value) VALUES ('tema', 'escuro');",
+      );
+      final rows = await db.customSelect('SELECT * FROM app_settings;').get();
+      expect(rows, hasLength(1));
+    });
+
+    test(
+      'o banco tem exatamente 10 tabelas — nem uma a mais, nem a menos',
+      () async {
+        final rows = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' "
+              "AND name NOT LIKE 'sqlite_%';",
+            )
+            .get();
+        final tableNames = rows.map((r) => r.data['name'] as String).toSet();
+
+        expect(tableNames, {
+          'niches',
+          'transactions',
+          'income_sources',
+          'investments',
+          'investment_balances',
+          'debts',
+          'debt_installments',
+          'app_settings',
+          'app_usage_days',
+          'error_log',
+        });
+      },
+    );
+  });
 }

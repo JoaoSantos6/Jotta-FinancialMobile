@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'tables/app_settings.dart';
 import 'tables/app_usage_days.dart';
 import 'tables/debt_installments.dart';
 import 'tables/debts.dart';
@@ -28,6 +29,7 @@ part 'app_database.g.dart';
     InvestmentBalances,
     Debts,
     DebtInstallments,
+    AppSettings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
