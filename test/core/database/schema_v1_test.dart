@@ -54,4 +54,41 @@ void main() {
       expect(rows, hasLength(1));
     });
   });
+
+  group('idx_tx_search — T-22', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('existe e é parcial (WHERE deleted_at IS NULL)', () async {
+      final rows = await db
+          .customSelect(
+            "SELECT sql FROM sqlite_master WHERE type = 'index' "
+            "AND name = 'idx_tx_search';",
+          )
+          .get();
+      expect(rows, hasLength(1));
+      final sql = rows.first.data['sql'] as String;
+      expect(sql.contains('deleted_at IS NULL'), isTrue);
+    });
+
+    test(
+      'LIKE sobre description_norm encontra "Açúcar" buscando "acucar"',
+      () async {
+        await db.customStatement(
+          "INSERT INTO transactions (id, kind, amount_cents, occurred_on, "
+          "description, description_norm, created_at, updated_at) VALUES "
+          "('t1', 'expense', 500, '2026-09-05', 'Açúcar', 'acucar', "
+          "'2026-09-05T00:00:00', '2026-09-05T00:00:00');",
+        );
+        final rows = await db
+            .customSelect(
+              "SELECT * FROM transactions WHERE description_norm LIKE '%acucar%';",
+            )
+            .get();
+        expect(rows, hasLength(1));
+      },
+    );
+  });
 }
