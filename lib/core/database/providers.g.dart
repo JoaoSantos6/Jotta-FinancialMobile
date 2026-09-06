@@ -60,6 +60,12 @@ String _$databaseKeyStoreHash() => r'ba00d71ca82fda261aee2b4a215f903c30d3a743';
 ///
 /// `keepAlive`: o banco vive enquanto o app viver — nenhum `autoDispose`
 /// fecha a conexão por trás da UI.
+///
+/// `retry: _neverRetry`: o Riverpod 3 tenta de novo com backoff por padrão
+/// quando um provider falha. As falhas daqui (Keystore indisponível, chave
+/// corrompida, SQLCipher indisponível) não são transitórias — repetir na
+/// hora não resolve, e ficaria escondido atrás de "carregando" para sempre
+/// em vez de mostrar a [BootstrapFailureScreen] (T-37/T-39).
 
 @ProviderFor(appDatabase)
 final appDatabaseProvider = AppDatabaseProvider._();
@@ -69,6 +75,12 @@ final appDatabaseProvider = AppDatabaseProvider._();
 ///
 /// `keepAlive`: o banco vive enquanto o app viver — nenhum `autoDispose`
 /// fecha a conexão por trás da UI.
+///
+/// `retry: _neverRetry`: o Riverpod 3 tenta de novo com backoff por padrão
+/// quando um provider falha. As falhas daqui (Keystore indisponível, chave
+/// corrompida, SQLCipher indisponível) não são transitórias — repetir na
+/// hora não resolve, e ficaria escondido atrás de "carregando" para sempre
+/// em vez de mostrar a [BootstrapFailureScreen] (T-37/T-39).
 
 final class AppDatabaseProvider
     extends
@@ -83,11 +95,17 @@ final class AppDatabaseProvider
   ///
   /// `keepAlive`: o banco vive enquanto o app viver — nenhum `autoDispose`
   /// fecha a conexão por trás da UI.
+  ///
+  /// `retry: _neverRetry`: o Riverpod 3 tenta de novo com backoff por padrão
+  /// quando um provider falha. As falhas daqui (Keystore indisponível, chave
+  /// corrompida, SQLCipher indisponível) não são transitórias — repetir na
+  /// hora não resolve, e ficaria escondido atrás de "carregando" para sempre
+  /// em vez de mostrar a [BootstrapFailureScreen] (T-37/T-39).
   AppDatabaseProvider._()
     : super(
         from: null,
         argument: null,
-        retry: null,
+        retry: _neverRetry,
         name: r'appDatabaseProvider',
         isAutoDispose: false,
         dependencies: null,
@@ -109,4 +127,4 @@ final class AppDatabaseProvider
   }
 }
 
-String _$appDatabaseHash() => r'c1131ac0f409b115f3022fa2f58be12b3d4fb4d6';
+String _$appDatabaseHash() => r'f2c019c27777608a7987548c5f4b39247a054cbb';

@@ -17,7 +17,13 @@ DatabaseKeyStore databaseKeyStore(Ref ref) => KeystoreDatabaseKeyStore();
 ///
 /// `keepAlive`: o banco vive enquanto o app viver — nenhum `autoDispose`
 /// fecha a conexão por trás da UI.
-@Riverpod(keepAlive: true)
+///
+/// `retry: _neverRetry`: o Riverpod 3 tenta de novo com backoff por padrão
+/// quando um provider falha. As falhas daqui (Keystore indisponível, chave
+/// corrompida, SQLCipher indisponível) não são transitórias — repetir na
+/// hora não resolve, e ficaria escondido atrás de "carregando" para sempre
+/// em vez de mostrar a [BootstrapFailureScreen] (T-37/T-39).
+@Riverpod(keepAlive: true, retry: _neverRetry)
 Future<AppDatabase> appDatabase(Ref ref) async {
   final store = ref.watch(databaseKeyStoreProvider);
   final result = await store.getOrCreate();
@@ -33,3 +39,5 @@ Future<AppDatabase> appDatabase(Ref ref) async {
 
   return AppDatabase(NativeDatabase.opened(rawDatabase));
 }
+
+Duration? _neverRetry(int retryCount, Object error) => null;
