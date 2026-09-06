@@ -27,4 +27,31 @@ void main() {
       );
     });
   });
+
+  group('transactions — T-21', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    Future<void> insertWithAmount(int cents) => db.customStatement(
+      "INSERT INTO transactions (id, kind, amount_cents, occurred_on, "
+      "created_at, updated_at) VALUES ('t1', 'expense', $cents, "
+      "'2026-09-05', '2026-09-05T00:00:00', '2026-09-05T00:00:00');",
+    );
+
+    test('amount_cents = 0 é rejeitado pelo CHECK', () async {
+      await expectLater(insertWithAmount(0), throwsException);
+    });
+
+    test('amount_cents negativo é rejeitado pelo CHECK', () async {
+      await expectLater(insertWithAmount(-1), throwsException);
+    });
+
+    test('amount_cents = 1 é aceito', () async {
+      await insertWithAmount(1);
+      final rows = await db.customSelect('SELECT * FROM transactions;').get();
+      expect(rows, hasLength(1));
+    });
+  });
 }

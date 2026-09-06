@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'tables/niches.dart';
+import 'tables/transactions.dart';
 
 part 'app_database.g.dart';
 
@@ -9,7 +10,7 @@ part 'app_database.g.dart';
 ///
 /// `enableMigrations` no `NativeDatabase.opened` (ver `providers.dart`) faz o
 /// Drift gerenciar o `PRAGMA user_version` e chamar [migration] sozinho.
-@DriftDatabase(tables: [Niches])
+@DriftDatabase(tables: [Niches, Transactions])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
