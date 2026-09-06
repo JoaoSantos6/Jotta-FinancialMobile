@@ -323,4 +323,41 @@ void main() {
       },
     );
   });
+
+  group('índices parciais — T-28', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test(
+      'os 4 índices existem, todos parciais (WHERE deleted_at IS NULL)',
+      () async {
+        final rows = await db
+            .customSelect(
+              "SELECT name, sql FROM sqlite_master WHERE type = 'index' "
+              "AND name LIKE 'idx_tx_%';",
+            )
+            .get();
+        final byName = {
+          for (final r in rows)
+            r.data['name'] as String: r.data['sql'] as String,
+        };
+
+        expect(byName.keys, {
+          'idx_tx_period',
+          'idx_tx_niche',
+          'idx_tx_kind',
+          'idx_tx_search',
+        });
+        for (final entry in byName.entries) {
+          expect(
+            entry.value.contains('deleted_at IS NULL'),
+            isTrue,
+            reason: '${entry.key} deveria ser parcial',
+          );
+        }
+      },
+    );
+  });
 }

@@ -62,6 +62,18 @@ class AppDatabase extends _$AppDatabase {
 /// exatamente a query que a Home mais usa (RNF-3).
 Future<void> _createIndexes(Migrator m) async {
   await m.database.customStatement(
+    'CREATE INDEX idx_tx_period ON transactions(occurred_on) '
+    'WHERE deleted_at IS NULL;',
+  );
+  await m.database.customStatement(
+    'CREATE INDEX idx_tx_niche ON transactions(niche_id, occurred_on) '
+    'WHERE deleted_at IS NULL;',
+  );
+  await m.database.customStatement(
+    'CREATE INDEX idx_tx_kind ON transactions(kind, occurred_on) '
+    'WHERE deleted_at IS NULL;',
+  );
+  await m.database.customStatement(
     'CREATE INDEX idx_tx_search ON transactions(niche_id, description_norm) '
     'WHERE deleted_at IS NULL;',
   );
