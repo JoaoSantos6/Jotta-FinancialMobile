@@ -6,7 +6,12 @@ plugins {
 
 android {
     namespace = "com.jotta.financial"
-    compileSdk = flutter.compileSdkVersion
+    // Literal, não flutter.compileSdkVersion: flutter_secure_storage 11.0.0 exige
+    // compileSdk 37+ (descoberto rodando de verdade no Actions do GitHub — o
+    // Flutter 3.47.2 ainda resolve flutter.compileSdkVersion para 36). Mesma lógica
+    // do minSdk logo abaixo: o padrão do Flutter muda de versão para versão sem
+    // aviso no nosso changelog.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

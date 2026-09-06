@@ -44,5 +44,19 @@ void main() {
       );
       expect(int.parse(match!.group(1)!), 26);
     });
+
+    test('compileSdk é literal e >= 37 (flutter_secure_storage exige)', () {
+      final match = RegExp(r'compileSdk\s*=\s*(\d+)').firstMatch(gradle);
+      expect(
+        match,
+        isNotNull,
+        reason:
+            'compileSdk deve ser um literal inteiro, não '
+            'flutter.compileSdkVersion — descoberto em CI real: o Flutter '
+            '3.47.2 resolve isso para 36, e flutter_secure_storage 11.0.0 '
+            'exige 37+ (docs/DECISIONS.md)',
+      );
+      expect(int.parse(match!.group(1)!), greaterThanOrEqualTo(37));
+    });
   });
 }
