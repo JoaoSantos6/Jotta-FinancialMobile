@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'seed/niche_seed.dart';
 import 'tables/app_settings.dart';
 import 'tables/app_usage_days.dart';
 import 'tables/debt_installments.dart';
@@ -43,6 +44,11 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
       await _createIndexes(m);
+      // Idempotente de propósito (T-34): um futuro onCreate rodado sobre um
+      // banco parcialmente migrado não duplica o seed.
+      await batch((b) {
+        b.insertAll(niches, kNicheSeed, mode: InsertMode.insertOrIgnore);
+      });
     },
     // Não existe v2 ainda. Um onUpgrade vazio que aceita qualquer versão é
     // uma armadilha esperando o próximo ADR — melhor recusar explicitamente
