@@ -1,5 +1,6 @@
 // T-20 a T-30 — schema v1 completo (guarda-chuva §5.3, emendado com
 // description_norm, app_usage_days e error_log — docs/DECISIONS.md).
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:financial/core/database/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -381,6 +382,21 @@ void main() {
           "'2026-09-05T00:00:00');",
         ),
         throwsException,
+      );
+    });
+  });
+
+  group('onUpgrade se recusa a adivinhar — T-30', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('from 1 to 2 lança UnsupportedError', () async {
+      final migrator = Migrator(db);
+      await expectLater(
+        db.migration.onUpgrade(migrator, 1, 2),
+        throwsUnsupportedError,
       );
     });
   });
