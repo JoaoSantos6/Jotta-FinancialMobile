@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+env:
+  # Fixada, não "stable" flutuante — um bump do canal não pode quebrar a CI
+  # sem que ninguém tenha pedido (guarda-chuva §5.9).
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  test:
+    name: Analyze, format, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # T-44: sem isto, os testes do Bloco C (T-14 a T-19) falham — PRAGMA
+      # key seria aceito por uma SQLite comum e ninguém perceberia. A prova
+      # de que esta etapa é necessária é a própria suíte: removê-la reprova
+      # exatamente os testes de core/database/.
+      - name: Instala libsqlcipher
+        run: sudo apt-get update -y && sudo apt-get install -y libsqlcipher-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Instala dependências
+        run: flutter pub get
+
+      - name: Gera código (Drift, Riverpod)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # T-45: guarda-chuva §5.9 — analyze, format, testes da suíte inteira.
+      - name: flutter analyze
+        run: flutter analyze
+
+      - name: dart format --set-exit-if-changed
+        run: dart format --set-exit-if-changed .
+
+      - name: flutter test --coverage
+        run: flutter test --coverage
+
+      - name: Trava - material da chave e log de valor monetário
+        run: ./tool/ci/check_logs.sh
+
+  build-and-check-manifest:
+    name: Build APK e travas de manifest
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Instala dependências
+        run: flutter pub get
+
+      - name: Gera código (Drift, Riverpod)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # T-46: o artefato que as travas de manifest seguintes leem. O build
+      # falha por si só se o APK não sair — não precisa de checagem extra.
+      - name: flutter build apk --debug
+        run: flutter build apk --debug
+
+      # T-47, T-48, T-49: leem o manifest MERGED (dentro do APK), não o
+      # arquivo-fonte — uma dependência transitiva pode reintroduzir
+      # allowBackup="true" ou uma permissão sem que uma linha do nosso
+      # código mude (risco A4).
+      - name: Trava - manifest (INTERNET, allowBackup, baseline de permissões)
+        run: ./tool/ci/check_manifest.sh build/app/outputs/flutter-apk/app-debug.apk
