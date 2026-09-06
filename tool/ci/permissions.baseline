@@ -1,0 +1,12 @@
+# Toda linha aqui é uma permissão aceita, uma por vez, por decisão explícita
+# (guarda-chuva §6.6). Permissão nova fora desta lista reprova o build
+# (tool/ci/check_manifest.sh).
+#
+# com.jotta.financial.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION — não é uma
+# permissão de capacidade, e não é de nenhuma dependência: é um self-permission
+# de assinatura que a própria androidx.core injeta automaticamente em todo
+# app com compileSdk >= 33 (guarda-chuva §6 do Android 13, sobre
+# BroadcastReceiver não-exportado registrado em runtime). Não concede acesso
+# a nada de fora do app; existe em praticamente todo app Flutter moderno.
+# Aceito em 2026-09-06 (docs/DECISIONS.md).
+com.jotta.financial.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION

@@ -71,19 +71,31 @@ jobs:
       - name: flutter build apk --debug
         run: flutter build apk --debug
 
-      # T-47, T-48, T-49: leem o manifest MERGED (dentro do APK), não o
-      # arquivo-fonte — uma dependência transitiva pode reintroduzir
-      # allowBackup="true" ou uma permissão sem que uma linha do nosso
-      # código mude (risco A4).
-      - name: Trava - manifest (INTERNET, allowBackup, baseline de permissões)
-        run: ./tool/ci/check_manifest.sh build/app/outputs/flutter-apk/app-debug.apk
+      # Provisório, enquanto investigamos a origem real de uma permissão
+      # inesperada (ver achado em docs/DECISIONS.md): o relatório do
+      # merge de manifest do AGP mostra, com comentário de proveniência,
+      # de qual dependência cada permissão veio.
+      - name: Debug - relatório do merge de manifest
+        if: always()
+        run: cat android/app/build/outputs/logs/manifest-merger-debug-report.txt || true
 
-      # Publica o APK como artefato do run, para quem quiser instalar em
-      # aparelho sem precisar montar o toolchain Android localmente (checklist
-      # manual do marco, docs/adr-1/TASK.md — Definição de pronto, item 5).
+      # Publica o APK ANTES da trava de manifest: o build em si (T-46) já
+      # passou, e quem só quer instalar e olhar a tela não deveria ficar
+      # bloqueado por uma trava de segurança que ainda pode estar
+      # reprovando por engano nosso, não por permissão de verdade
+      # introduzida por dependência. A trava roda de qualquer forma,
+      # logo depois, e continua reprovando o job (e portanto o merge)
+      # quando encontra algo real.
       - name: Publica o APK debug como artefato
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
+
+      # T-47, T-48, T-49: leem o manifest MERGED (dentro do APK), não o
+      # arquivo-fonte — uma dependência transitiva pode reintroduzir
+      # allowBackup="true" ou uma permissão sem que uma linha do nosso
+      # código mude (risco A4).
+      - name: Trava - manifest (INTERNET, allowBackup, baseline de permissões)
+        run: ./tool/ci/check_manifest.sh build/app/outputs/flutter-apk/app-debug.apk
