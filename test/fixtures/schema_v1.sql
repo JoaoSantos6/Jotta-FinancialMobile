@@ -1,0 +1,14 @@
+CREATE TABLE "app_settings" ("key" TEXT NOT NULL, "value" TEXT NOT NULL, PRIMARY KEY ("key"));
+CREATE TABLE "app_usage_days" ("day" TEXT NOT NULL, PRIMARY KEY ("day"));
+CREATE TABLE "debt_installments" ("id" TEXT NOT NULL, "debt_id" TEXT NOT NULL REFERENCES debts (id), "number" INTEGER NOT NULL, "due_on" TEXT NOT NULL, "amount_cents" INTEGER NOT NULL, "paid_on" TEXT NULL, PRIMARY KEY ("id"), UNIQUE ("debt_id", "number"));
+CREATE TABLE "debts" ("id" TEXT NOT NULL, "name" TEXT NOT NULL, "creditor" TEXT NULL, "total_cents" INTEGER NOT NULL, "installment_count" INTEGER NOT NULL, "installment_cents" INTEGER NOT NULL, "first_due_on" TEXT NOT NULL, "settled_at" TEXT NULL, "created_at" TEXT NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "error_log" ("id" TEXT NOT NULL, "occurred_at" TEXT NOT NULL, "type" TEXT NOT NULL, "screen" TEXT NULL, "stack" TEXT NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "income_sources" ("id" TEXT NOT NULL, "name" TEXT NOT NULL, "type" TEXT NOT NULL, "expected_cents" INTEGER NULL, "is_recurring" INTEGER NOT NULL DEFAULT 0 CHECK ("is_recurring" IN (0, 1)), "expected_day" INTEGER NULL, "archived_at" TEXT NULL, "created_at" TEXT NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "investment_balances" ("id" TEXT NOT NULL, "investment_id" TEXT NOT NULL REFERENCES investments (id), "balance_cents" INTEGER NOT NULL, "recorded_on" TEXT NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "investments" ("id" TEXT NOT NULL, "name" TEXT NOT NULL, "type" TEXT NOT NULL, "balance_cents" INTEGER NOT NULL DEFAULT 0, "balance_updated_at" TEXT NULL, "archived_at" TEXT NULL, "created_at" TEXT NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "niches" ("id" TEXT NOT NULL, "name" TEXT NOT NULL, "icon" TEXT NOT NULL, "color" INTEGER NOT NULL, "kind" TEXT NOT NULL, "sort_order" INTEGER NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "transactions" ("id" TEXT NOT NULL, "kind" TEXT NOT NULL, "amount_cents" INTEGER NOT NULL, "occurred_on" TEXT NOT NULL, "description" TEXT NULL, "description_norm" TEXT NULL, "payment_method" TEXT NULL, "niche_id" TEXT NULL REFERENCES niches (id), "income_source_id" TEXT NULL REFERENCES income_sources (id), "investment_id" TEXT NULL REFERENCES investments (id), "debt_installment_id" TEXT NULL REFERENCES debt_installments (id), "recurrence" TEXT NULL, "recurrence_group_id" TEXT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, "deleted_at" TEXT NULL, PRIMARY KEY ("id"), CHECK (amount_cents > 0));
+CREATE INDEX idx_tx_kind ON transactions(kind, occurred_on) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tx_niche ON transactions(niche_id, occurred_on) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tx_period ON transactions(occurred_on) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tx_search ON transactions(niche_id, description_norm) WHERE deleted_at IS NULL;
