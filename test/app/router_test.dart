@@ -82,4 +82,33 @@ void main() {
       },
     );
   });
+
+  group('T-43 — alvos de toque ≥ 48dp (guarda-chuva RNF-7)', () {
+    testWidgets('cada item da bottom nav tem altura e largura ≥ 48dp', (
+      tester,
+    ) async {
+      await pumpAt(tester, '/');
+
+      for (final tooltip in ['Home', 'Nichos', 'Renda', 'Ajustes']) {
+        final size = tester.getSize(find.byTooltip(tooltip));
+        expect(
+          size.width,
+          greaterThanOrEqualTo(48),
+          reason: '$tooltip: largura ${size.width}',
+        );
+        expect(
+          size.height,
+          greaterThanOrEqualTo(48),
+          reason: '$tooltip: altura ${size.height}',
+        );
+      }
+    });
+
+    testWidgets('o FAB tem altura e largura ≥ 48dp', (tester) async {
+      await pumpAt(tester, '/');
+      final size = tester.getSize(find.byType(FloatingActionButton));
+      expect(size.width, greaterThanOrEqualTo(48));
+      expect(size.height, greaterThanOrEqualTo(48));
+    });
+  });
 }
