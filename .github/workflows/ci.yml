@@ -74,10 +74,18 @@ jobs:
       # Provisório, enquanto investigamos a origem real de uma permissão
       # inesperada (ver achado em docs/DECISIONS.md): o relatório do
       # merge de manifest do AGP mostra, com comentário de proveniência,
-      # de qual dependência cada permissão veio.
+      # de qual dependência cada permissão veio. O caminho
+      # `build/outputs/logs/manifest-merger-debug-report.txt` não existe
+      # nesta versão do AGP (confirmado em CI real, run 34005175742) — a
+      # localização do relatório de blame mudou entre versões do AGP, então
+      # procuramos em vez de fixar um caminho.
       - name: Debug - relatório do merge de manifest
         if: always()
-        run: cat android/app/build/outputs/logs/manifest-merger-debug-report.txt || true
+        run: |
+          find android/app/build -iname '*manifest-merger*' -o -iname '*manifest*blame*' 2>/dev/null | while read -r f; do
+            echo "=== $f ==="
+            cat "$f"
+          done
 
       # Publica o APK ANTES da trava de manifest: o build em si (T-46) já
       # passou, e quem só quer instalar e olhar a tela não deveria ficar
