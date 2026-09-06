@@ -360,4 +360,28 @@ void main() {
       },
     );
   });
+
+  group('foreign_keys = ON — T-29', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('PRAGMA foreign_keys devolve 1 após abrir', () async {
+      final rows = await db.customSelect('PRAGMA foreign_keys;').get();
+      expect(rows.first.data['foreign_keys'], 1);
+    });
+
+    test('inserir transaction com niche_id inexistente falha', () async {
+      await expectLater(
+        db.customStatement(
+          "INSERT INTO transactions (id, kind, amount_cents, occurred_on, "
+          "niche_id, created_at, updated_at) VALUES ('t1', 'expense', 500, "
+          "'2026-09-05', 'nicho-que-nao-existe', '2026-09-05T00:00:00', "
+          "'2026-09-05T00:00:00');",
+        ),
+        throwsException,
+      );
+    });
+  });
 }

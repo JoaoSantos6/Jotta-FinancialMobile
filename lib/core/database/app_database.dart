@@ -53,6 +53,12 @@ class AppDatabase extends _$AppDatabase {
         'from=$from to=$to',
       );
     },
+    // SQLite desliga foreign_keys por padrão, e o PRAGMA não persiste no
+    // arquivo — precisa ser religado a cada conexão. Todas as invariantes
+    // da seção 5.3 do guarda-chuva dependem disso estar ligado.
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON;');
+    },
   );
 }
 

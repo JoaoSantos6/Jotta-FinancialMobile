@@ -2507,6 +2507,9 @@ class $TransactionsTable extends Transactions
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES niches (id)',
+    ),
   );
   static const VerificationMeta _incomeSourceIdMeta = const VerificationMeta(
     'incomeSourceId',
@@ -4511,6 +4514,29 @@ typedef $$NichesTableUpdateCompanionBuilder = NichesCompanion Function({
   Value<int> rowid,
 });
 
+final class $$NichesTableReferences
+    extends BaseReferences<_$AppDatabase, $NichesTable, Niche> {
+  $$NichesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
+  _transactionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.transactions,
+    aliasName: 'niches__id__transactions__niche_id',
+  );
+
+  $$TransactionsTableProcessedTableManager get transactionsRefs {
+    final manager = $$TransactionsTableTableManager(
+      $_db,
+      $_db.transactions,
+    ).filter((f) => f.nicheId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_transactionsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$NichesTableFilterComposer
     extends Composer<_$AppDatabase, $NichesTable> {
   $$NichesTableFilterComposer({
@@ -4549,6 +4575,31 @@ class $$NichesTableFilterComposer
     column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> transactionsRefs(
+    Expression<bool> Function($$TransactionsTableFilterComposer f) f,
+  ) {
+    final $$TransactionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.transactions,
+      getReferencedColumn: (t) => t.nicheId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TransactionsTableFilterComposer(
+            $db: $db,
+            $table: $db.transactions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$NichesTableOrderingComposer
@@ -4617,6 +4668,31 @@ class $$NichesTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  Expression<T> transactionsRefs<T extends Object>(
+    Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
+  ) {
+    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.transactions,
+      getReferencedColumn: (t) => t.nicheId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TransactionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.transactions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$NichesTableTableManager
@@ -4630,9 +4706,9 @@ class $$NichesTableTableManager
           $$NichesTableAnnotationComposer,
           $$NichesTableCreateCompanionBuilder,
           $$NichesTableUpdateCompanionBuilder,
-          (Niche, BaseReferences<_$AppDatabase, $NichesTable, Niche>),
+          (Niche, $$NichesTableReferences),
           Niche,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool transactionsRefs})
         > {
   $$NichesTableTableManager(_$AppDatabase db, $NichesTable table)
     : super(
@@ -4685,15 +4761,35 @@ class $$NichesTableTableManager
               .map(
                 (e) => (
                   e.readTable<$NichesTable, Niche>(table),
-                  BaseReferences<_$AppDatabase, $NichesTable, Niche>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  $$NichesTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({transactionsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (transactionsRefs) db.transactions],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (transactionsRefs)
+                    await $_getPrefetchedData<Niche, $NichesTable, Transaction>(
+                      currentTable: table,
+                      referencedTable: $$NichesTableReferences
+                          ._transactionsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$NichesTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).transactionsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.nicheId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -4708,9 +4804,9 @@ typedef $$NichesTableProcessedTableManager =
       $$NichesTableAnnotationComposer,
       $$NichesTableCreateCompanionBuilder,
       $$NichesTableUpdateCompanionBuilder,
-      (Niche, BaseReferences<_$AppDatabase, $NichesTable, Niche>),
+      (Niche, $$NichesTableReferences),
       Niche,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool transactionsRefs})
     >;
 typedef $$IncomeSourcesTableCreateCompanionBuilder =
     IncomeSourcesCompanion Function({
@@ -6397,6 +6493,23 @@ final class $$TransactionsTableReferences
     extends BaseReferences<_$AppDatabase, $TransactionsTable, Transaction> {
   $$TransactionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
+  static $NichesTable _nicheIdTable(_$AppDatabase db) =>
+      db.niches.createAlias('transactions__niche_id__niches__id');
+
+  $$NichesTableProcessedTableManager? get nicheId {
+    final $_column = $_itemColumn<String>('niche_id');
+    if ($_column == null) return null;
+    final manager = $$NichesTableTableManager(
+      $_db,
+      $_db.niches,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_nicheIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static $IncomeSourcesTable _incomeSourceIdTable(_$AppDatabase db) => db
       .incomeSources
       .createAlias('transactions__income_source_id__income_sources__id');
@@ -6496,11 +6609,6 @@ class $$TransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get nicheId => $composableBuilder(
-    column: $table.nicheId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get recurrence => $composableBuilder(
     column: $table.recurrence,
     builder: (column) => ColumnFilters(column),
@@ -6525,6 +6633,29 @@ class $$TransactionsTableFilterComposer
     column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$NichesTableFilterComposer get nicheId {
+    final $$NichesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nicheId,
+      referencedTable: $db.niches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NichesTableFilterComposer(
+            $db: $db,
+            $table: $db.niches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$IncomeSourcesTableFilterComposer get incomeSourceId {
     final $$IncomeSourcesTableFilterComposer composer = $composerBuilder(
@@ -6640,11 +6771,6 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get nicheId => $composableBuilder(
-    column: $table.nicheId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get recurrence => $composableBuilder(
     column: $table.recurrence,
     builder: (column) => ColumnOrderings(column),
@@ -6669,6 +6795,29 @@ class $$TransactionsTableOrderingComposer
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$NichesTableOrderingComposer get nicheId {
+    final $$NichesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nicheId,
+      referencedTable: $db.niches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NichesTableOrderingComposer(
+            $db: $db,
+            $table: $db.niches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$IncomeSourcesTableOrderingComposer get incomeSourceId {
     final $$IncomeSourcesTableOrderingComposer composer = $composerBuilder(
@@ -6780,9 +6929,6 @@ class $$TransactionsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get nicheId =>
-      $composableBuilder(column: $table.nicheId, builder: (column) => column);
-
   GeneratedColumn<String> get recurrence => $composableBuilder(
     column: $table.recurrence,
     builder: (column) => column,
@@ -6801,6 +6947,29 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<String> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  $$NichesTableAnnotationComposer get nicheId {
+    final $$NichesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nicheId,
+      referencedTable: $db.niches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NichesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.niches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$IncomeSourcesTableAnnotationComposer get incomeSourceId {
     final $$IncomeSourcesTableAnnotationComposer composer = $composerBuilder(
@@ -6886,6 +7055,7 @@ class $$TransactionsTableTableManager
           (Transaction, $$TransactionsTableReferences),
           Transaction,
           PrefetchHooks Function({
+            bool nicheId,
             bool incomeSourceId,
             bool investmentId,
             bool debtInstallmentId,
@@ -6988,6 +7158,7 @@ class $$TransactionsTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                nicheId = false,
                 incomeSourceId = false,
                 investmentId = false,
                 debtInstallmentId = false,
@@ -7011,6 +7182,17 @@ class $$TransactionsTableTableManager
                           dynamic
                         >
                       >(state) {
+                        if (nicheId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.nicheId,
+                            referencedTable: $$TransactionsTableReferences
+                                ._nicheIdTable(db),
+                            referencedColumn: $$TransactionsTableReferences
+                                ._nicheIdTable(db)
+                                .id,
+                          ) as T;
+                        }
                         if (incomeSourceId) {
                           state = state.withJoin(
                             currentTable: table,
@@ -7069,6 +7251,7 @@ typedef $$TransactionsTableProcessedTableManager =
       (Transaction, $$TransactionsTableReferences),
       Transaction,
       PrefetchHooks Function({
+        bool nicheId,
         bool incomeSourceId,
         bool investmentId,
         bool debtInstallmentId,

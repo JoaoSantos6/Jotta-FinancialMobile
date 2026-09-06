@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'debt_installments.dart';
 import 'income_sources.dart';
 import 'investments.dart';
+import 'niches.dart';
 
 /// Toda movimentação de caixa vive aqui. Fonte única de verdade da Home
 /// (guarda-chuva §5.3).
@@ -32,7 +33,8 @@ class Transactions extends Table {
   /// 'debit' | 'credit' | 'pix' | 'cash' | null.
   TextColumn get paymentMethod => text().named('payment_method').nullable()();
 
-  TextColumn get nicheId => text().named('niche_id').nullable()();
+  TextColumn get nicheId =>
+      text().named('niche_id').nullable().references(Niches, #id)();
   TextColumn get incomeSourceId => text()
       .named('income_source_id')
       .nullable()
