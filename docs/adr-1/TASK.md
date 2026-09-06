@@ -290,7 +290,7 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
   verificação, com as duas exceções tipadas.
 - **Arquivos:** `lib/core/database/open_encrypted_database.dart` [novo],
   `test/core/database/sqlcipher_active_test.dart` [altera]
-- **Validação:** mesmo comando — integração — **V-14** — com um `CommonDatabase` falso
+- **Validação:** mesmo comando — integração — **V-14** — com um `Database` falso
   (mocktail) cujo `PRAGMA cipher_version` devolve vazio, `openEncryptedDatabase` lança
   `SqlCipherUnavailable` em vez de devolver o banco. Não dá mais para forçar isso com um
   binário real trocado em runtime — o hook fixa o binário no build inteiro — então o

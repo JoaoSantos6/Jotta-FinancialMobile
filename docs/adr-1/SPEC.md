@@ -245,7 +245,7 @@ processo e a chamada acontece uma vez, no bootstrap, antes de qualquer UI.
 ### 5.3 `openEncryptedDatabase` — `core/database/open_encrypted_database.dart`
 
 ```dart
-typedef DatabaseOpener = CommonDatabase Function(String path);
+typedef DatabaseOpener = Database Function(String path);
 
 /// Abre [file] cifrado com [key] e prova que o SQLCipher está de fato ativo.
 ///
@@ -253,7 +253,7 @@ typedef DatabaseOpener = CommonDatabase Function(String path);
 /// antes do key faz o SQLCipher marcar o banco como não-cifrado nesta conexão.
 ///
 /// [open] é um ponto de injeção para teste — por padrão é `sqlite3.open`, que usa
-/// o binário resolvido pelo hook (§5.4). Um teste pode passar um `CommonDatabase`
+/// o binário resolvido pelo hook (§5.4). Um teste pode passar um `Database`
 /// falso para provar o [SqlCipherUnavailable] sem depender de um binário diferente
 /// existir em tempo de execução.
 ///
@@ -261,10 +261,10 @@ typedef DatabaseOpener = CommonDatabase Function(String path);
 /// que a lib carregada é SQLite puro, o PRAGMA key foi ignorado e o banco estaria
 /// em claro sem nenhum erro visível.
 /// Lança [DatabaseLocked] se a chave não abrir o arquivo.
-CommonDatabase openEncryptedDatabase({
+Database openEncryptedDatabase({
   required File file,
   required DatabaseKey key,
-  DatabaseOpener open = sqlite3.open,
+  DatabaseOpener? open, // null usa sqlite3.open — tear-off não é const em Dart
 });
 ```
 
