@@ -91,4 +91,33 @@ void main() {
       },
     );
   });
+
+  group('app_usage_days — T-23', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('registrar o mesmo dia duas vezes mantém uma linha', () async {
+      await db.customStatement(
+        "INSERT OR IGNORE INTO app_usage_days (day) VALUES ('2026-09-05');",
+      );
+      await db.customStatement(
+        "INSERT OR IGNORE INTO app_usage_days (day) VALUES ('2026-09-05');",
+      );
+      final rows = await db.customSelect('SELECT * FROM app_usage_days;').get();
+      expect(rows, hasLength(1));
+    });
+
+    test('dois dias diferentes produzem duas linhas', () async {
+      await db.customStatement(
+        "INSERT INTO app_usage_days (day) VALUES ('2026-09-05');",
+      );
+      await db.customStatement(
+        "INSERT INTO app_usage_days (day) VALUES ('2026-09-06');",
+      );
+      final rows = await db.customSelect('SELECT * FROM app_usage_days;').get();
+      expect(rows, hasLength(2));
+    });
+  });
 }

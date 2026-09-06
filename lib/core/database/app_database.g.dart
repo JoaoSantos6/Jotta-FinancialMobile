@@ -1388,16 +1388,178 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   }
 }
 
+class $AppUsageDaysTable extends AppUsageDays
+    with TableInfo<$AppUsageDaysTable, AppUsageDay> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppUsageDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'app_usage_days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AppUsageDay> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day};
+  @override
+  AppUsageDay map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AppUsageDay(
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day'],
+      )!,
+    );
+  }
+
+  @override
+  $AppUsageDaysTable createAlias(String alias) {
+    return $AppUsageDaysTable(attachedDatabase, alias);
+  }
+}
+
+class AppUsageDay extends DataClass implements Insertable<AppUsageDay> {
+  /// 'YYYY-MM-DD', hora local.
+  final String day;
+  const AppUsageDay({required this.day});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<String>(day);
+    return map;
+  }
+
+  AppUsageDaysCompanion toCompanion(bool nullToAbsent) {
+    return AppUsageDaysCompanion(day: Value(day));
+  }
+
+  factory AppUsageDay.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AppUsageDay(day: serializer.fromJson<String>(json['day']));
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{'day': serializer.toJson<String>(day)};
+  }
+
+  AppUsageDay copyWith({String? day}) => AppUsageDay(day: day ?? this.day);
+  AppUsageDay copyWithCompanion(AppUsageDaysCompanion data) {
+    return AppUsageDay(day: data.day.present ? data.day.value : this.day);
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppUsageDay(')
+          ..write('day: $day')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => day.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is AppUsageDay && other.day == this.day);
+}
+
+class AppUsageDaysCompanion extends UpdateCompanion<AppUsageDay> {
+  final Value<String> day;
+  final Value<int> rowid;
+  const AppUsageDaysCompanion({
+    this.day = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AppUsageDaysCompanion.insert({
+    required String day,
+    this.rowid = const Value.absent(),
+  }) : day = Value(day);
+  static Insertable<AppUsageDay> custom({
+    Expression<String>? day,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AppUsageDaysCompanion copyWith({Value<String>? day, Value<int>? rowid}) {
+    return AppUsageDaysCompanion(
+      day: day ?? this.day,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppUsageDaysCompanion(')
+          ..write('day: $day, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $NichesTable niches = $NichesTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
+  late final $AppUsageDaysTable appUsageDays = $AppUsageDaysTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [niches, transactions];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    niches,
+    transactions,
+    appUsageDays,
+  ];
 }
 
 typedef $$NichesTableCreateCompanionBuilder = NichesCompanion Function({
@@ -2058,6 +2220,125 @@ typedef $$TransactionsTableProcessedTableManager =
       Transaction,
       PrefetchHooks Function()
     >;
+typedef $$AppUsageDaysTableCreateCompanionBuilder =
+    AppUsageDaysCompanion Function({required String day, Value<int> rowid});
+typedef $$AppUsageDaysTableUpdateCompanionBuilder =
+    AppUsageDaysCompanion Function({Value<String> day, Value<int> rowid});
+
+class $$AppUsageDaysTableFilterComposer
+    extends Composer<_$AppDatabase, $AppUsageDaysTable> {
+  $$AppUsageDaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AppUsageDaysTableOrderingComposer
+    extends Composer<_$AppDatabase, $AppUsageDaysTable> {
+  $$AppUsageDaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AppUsageDaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AppUsageDaysTable> {
+  $$AppUsageDaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+}
+
+class $$AppUsageDaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AppUsageDaysTable,
+          AppUsageDay,
+          $$AppUsageDaysTableFilterComposer,
+          $$AppUsageDaysTableOrderingComposer,
+          $$AppUsageDaysTableAnnotationComposer,
+          $$AppUsageDaysTableCreateCompanionBuilder,
+          $$AppUsageDaysTableUpdateCompanionBuilder,
+          (
+            AppUsageDay,
+            BaseReferences<_$AppDatabase, $AppUsageDaysTable, AppUsageDay>,
+          ),
+          AppUsageDay,
+          PrefetchHooks Function()
+        > {
+  $$AppUsageDaysTableTableManager(_$AppDatabase db, $AppUsageDaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppUsageDaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppUsageDaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppUsageDaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> day = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => AppUsageDaysCompanion(day: day, rowid: rowid),
+          createCompanionCallback: ({
+            required String day,
+            Value<int> rowid = const Value.absent(),
+          }) => AppUsageDaysCompanion.insert(day: day, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AppUsageDaysTable, AppUsageDay>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AppUsageDaysTable,
+                    AppUsageDay
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AppUsageDaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AppUsageDaysTable,
+      AppUsageDay,
+      $$AppUsageDaysTableFilterComposer,
+      $$AppUsageDaysTableOrderingComposer,
+      $$AppUsageDaysTableAnnotationComposer,
+      $$AppUsageDaysTableCreateCompanionBuilder,
+      $$AppUsageDaysTableUpdateCompanionBuilder,
+      (
+        AppUsageDay,
+        BaseReferences<_$AppDatabase, $AppUsageDaysTable, AppUsageDay>,
+      ),
+      AppUsageDay,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2066,4 +2347,6 @@ class $AppDatabaseManager {
       $$NichesTableTableManager(_db, _db.niches);
   $$TransactionsTableTableManager get transactions =>
       $$TransactionsTableTableManager(_db, _db.transactions);
+  $$AppUsageDaysTableTableManager get appUsageDays =>
+      $$AppUsageDaysTableTableManager(_db, _db.appUsageDays);
 }
