@@ -156,4 +156,55 @@ void main() {
       expect(rows, hasLength(1));
     });
   });
+
+  group('income_sources, investments, investment_balances — T-25', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test('income_sources existe com as 8 colunas da seção 5.3', () async {
+      await db.customStatement(
+        'SELECT id, name, type, expected_cents, is_recurring, expected_day, '
+        'archived_at, created_at FROM income_sources;',
+      );
+    });
+
+    test('investments existe com as 7 colunas da seção 5.3', () async {
+      await db.customStatement(
+        'SELECT id, name, type, balance_cents, balance_updated_at, '
+        'archived_at, created_at FROM investments;',
+      );
+    });
+
+    test('investment_balances referencia investments', () async {
+      await db.customStatement(
+        "INSERT INTO investments (id, name, type, created_at) "
+        "VALUES ('i1', 'Tesouro', 'fixed', '2026-09-05');",
+      );
+      await db.customStatement(
+        "INSERT INTO investment_balances (id, investment_id, balance_cents, "
+        "recorded_on) VALUES ('b1', 'i1', 10000, '2026-09-05');",
+      );
+      final rows = await db
+          .customSelect('SELECT * FROM investment_balances;')
+          .get();
+      expect(rows, hasLength(1));
+    });
+
+    test('transactions.income_source_id referencia income_sources', () async {
+      await db.customStatement(
+        "INSERT INTO income_sources (id, name, type, created_at) "
+        "VALUES ('s1', 'Salário', 'salary', '2026-09-05');",
+      );
+      await db.customStatement(
+        "INSERT INTO transactions (id, kind, amount_cents, occurred_on, "
+        "income_source_id, created_at, updated_at) VALUES ('t1', 'income', "
+        "840000, '2026-09-05', 's1', '2026-09-05T00:00:00', "
+        "'2026-09-05T00:00:00');",
+      );
+      final rows = await db.customSelect('SELECT * FROM transactions;').get();
+      expect(rows, hasLength(1));
+    });
+  });
 }

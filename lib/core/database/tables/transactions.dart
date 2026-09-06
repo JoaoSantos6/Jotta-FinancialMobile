@@ -1,5 +1,8 @@
 import 'package:drift/drift.dart';
 
+import 'income_sources.dart';
+import 'investments.dart';
+
 /// Toda movimentação de caixa vive aqui. Fonte única de verdade da Home
 /// (guarda-chuva §5.3).
 ///
@@ -8,10 +11,9 @@ import 'package:drift/drift.dart';
 /// `YYYY-MM-DD`, hora local — nunca `DateTimeColumn`, que o Drift persistiria
 /// como timestamp e reintroduziria fuso onde não existe fuso.
 ///
-/// As referências a `income_sources`, `investments` e `debt_installments`
-/// ganham `.references(...)` quando essas tabelas existirem (T-25/T-26) — não
-/// dá para referenciar uma tabela que ainda não está na lista do
-/// `@DriftDatabase`.
+/// A referência a `debt_installments` ganha `.references(...)` quando essa
+/// tabela existir (T-26) — não dá para referenciar uma tabela que ainda não
+/// está na lista do `@DriftDatabase`.
 class Transactions extends Table {
   TextColumn get id => text()();
 
@@ -33,9 +35,12 @@ class Transactions extends Table {
   TextColumn get paymentMethod => text().named('payment_method').nullable()();
 
   TextColumn get nicheId => text().named('niche_id').nullable()();
-  TextColumn get incomeSourceId =>
-      text().named('income_source_id').nullable()();
-  TextColumn get investmentId => text().named('investment_id').nullable()();
+  TextColumn get incomeSourceId => text()
+      .named('income_source_id')
+      .nullable()
+      .references(IncomeSources, #id)();
+  TextColumn get investmentId =>
+      text().named('investment_id').nullable().references(Investments, #id)();
   TextColumn get debtInstallmentId =>
       text().named('debt_installment_id').nullable()();
 
