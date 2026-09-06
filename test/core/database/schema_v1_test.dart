@@ -120,4 +120,40 @@ void main() {
       expect(rows, hasLength(2));
     });
   });
+
+  group('error_log — T-24', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    test(
+      'tem exatamente as 5 colunas — nenhuma de valor ou descrição',
+      () async {
+        final rows = await db
+            .customSelect("PRAGMA table_info('error_log');")
+            .get();
+        final columnNames = rows.map((r) => r.data['name'] as String).toSet();
+
+        expect(
+          columnNames,
+          {'id', 'occurred_at', 'type', 'screen', 'stack'},
+          reason:
+              'SEG-6: nunca o dado que causou o erro. Uma coluna de valor, '
+              'descrição, credor ou fonte de renda aqui é o achado, não a '
+              'exceção',
+        );
+      },
+    );
+
+    test('aceita um registro de exceção', () async {
+      await db.customStatement(
+        "INSERT INTO error_log (id, occurred_at, type, screen, stack) "
+        "VALUES ('e1', '2026-09-05T00:00:00', 'FormatException', "
+        "'/ajustes', 'stack trace aqui');",
+      );
+      final rows = await db.customSelect('SELECT * FROM error_log;').get();
+      expect(rows, hasLength(1));
+    });
+  });
 }

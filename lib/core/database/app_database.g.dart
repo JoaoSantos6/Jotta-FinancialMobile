@@ -1545,12 +1545,372 @@ class AppUsageDaysCompanion extends UpdateCompanion<AppUsageDay> {
   }
 }
 
+class $ErrorLogTable extends ErrorLog
+    with TableInfo<$ErrorLogTable, ErrorLogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ErrorLogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurredAtMeta = const VerificationMeta(
+    'occurredAt',
+  );
+  @override
+  late final GeneratedColumn<String> occurredAt = GeneratedColumn<String>(
+    'occurred_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _screenMeta = const VerificationMeta('screen');
+  @override
+  late final GeneratedColumn<String> screen = GeneratedColumn<String>(
+    'screen',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _stackMeta = const VerificationMeta('stack');
+  @override
+  late final GeneratedColumn<String> stack = GeneratedColumn<String>(
+    'stack',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, occurredAt, type, screen, stack];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'error_log';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ErrorLogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('occurred_at')) {
+      context.handle(
+        _occurredAtMeta,
+        occurredAt.isAcceptableOrUnknown(data['occurred_at']!, _occurredAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('screen')) {
+      context.handle(
+        _screenMeta,
+        screen.isAcceptableOrUnknown(data['screen']!, _screenMeta),
+      );
+    }
+    if (data.containsKey('stack')) {
+      context.handle(
+        _stackMeta,
+        stack.isAcceptableOrUnknown(data['stack']!, _stackMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stackMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ErrorLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ErrorLogData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      occurredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurred_at'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      screen: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}screen'],
+      ),
+      stack: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stack'],
+      )!,
+    );
+  }
+
+  @override
+  $ErrorLogTable createAlias(String alias) {
+    return $ErrorLogTable(attachedDatabase, alias);
+  }
+}
+
+class ErrorLogData extends DataClass implements Insertable<ErrorLogData> {
+  final String id;
+
+  /// ISO 8601 local.
+  final String occurredAt;
+
+  /// Nome da exceção.
+  final String type;
+
+  /// Rota onde ocorreu.
+  final String? screen;
+  final String stack;
+  const ErrorLogData({
+    required this.id,
+    required this.occurredAt,
+    required this.type,
+    this.screen,
+    required this.stack,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['occurred_at'] = Variable<String>(occurredAt);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || screen != null) {
+      map['screen'] = Variable<String>(screen);
+    }
+    map['stack'] = Variable<String>(stack);
+    return map;
+  }
+
+  ErrorLogCompanion toCompanion(bool nullToAbsent) {
+    return ErrorLogCompanion(
+      id: Value(id),
+      occurredAt: Value(occurredAt),
+      type: Value(type),
+      screen: screen == null && nullToAbsent
+          ? const Value.absent()
+          : Value(screen),
+      stack: Value(stack),
+    );
+  }
+
+  factory ErrorLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ErrorLogData(
+      id: serializer.fromJson<String>(json['id']),
+      occurredAt: serializer.fromJson<String>(json['occurredAt']),
+      type: serializer.fromJson<String>(json['type']),
+      screen: serializer.fromJson<String?>(json['screen']),
+      stack: serializer.fromJson<String>(json['stack']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'occurredAt': serializer.toJson<String>(occurredAt),
+      'type': serializer.toJson<String>(type),
+      'screen': serializer.toJson<String?>(screen),
+      'stack': serializer.toJson<String>(stack),
+    };
+  }
+
+  ErrorLogData copyWith({
+    String? id,
+    String? occurredAt,
+    String? type,
+    Value<String?> screen = const Value.absent(),
+    String? stack,
+  }) => ErrorLogData(
+    id: id ?? this.id,
+    occurredAt: occurredAt ?? this.occurredAt,
+    type: type ?? this.type,
+    screen: screen.present ? screen.value : this.screen,
+    stack: stack ?? this.stack,
+  );
+  ErrorLogData copyWithCompanion(ErrorLogCompanion data) {
+    return ErrorLogData(
+      id: data.id.present ? data.id.value : this.id,
+      occurredAt: data.occurredAt.present
+          ? data.occurredAt.value
+          : this.occurredAt,
+      type: data.type.present ? data.type.value : this.type,
+      screen: data.screen.present ? data.screen.value : this.screen,
+      stack: data.stack.present ? data.stack.value : this.stack,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ErrorLogData(')
+          ..write('id: $id, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('type: $type, ')
+          ..write('screen: $screen, ')
+          ..write('stack: $stack')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, occurredAt, type, screen, stack);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ErrorLogData &&
+          other.id == this.id &&
+          other.occurredAt == this.occurredAt &&
+          other.type == this.type &&
+          other.screen == this.screen &&
+          other.stack == this.stack);
+}
+
+class ErrorLogCompanion extends UpdateCompanion<ErrorLogData> {
+  final Value<String> id;
+  final Value<String> occurredAt;
+  final Value<String> type;
+  final Value<String?> screen;
+  final Value<String> stack;
+  final Value<int> rowid;
+  const ErrorLogCompanion({
+    this.id = const Value.absent(),
+    this.occurredAt = const Value.absent(),
+    this.type = const Value.absent(),
+    this.screen = const Value.absent(),
+    this.stack = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ErrorLogCompanion.insert({
+    required String id,
+    required String occurredAt,
+    required String type,
+    this.screen = const Value.absent(),
+    required String stack,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       occurredAt = Value(occurredAt),
+       type = Value(type),
+       stack = Value(stack);
+  static Insertable<ErrorLogData> custom({
+    Expression<String>? id,
+    Expression<String>? occurredAt,
+    Expression<String>? type,
+    Expression<String>? screen,
+    Expression<String>? stack,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (occurredAt != null) 'occurred_at': occurredAt,
+      if (type != null) 'type': type,
+      if (screen != null) 'screen': screen,
+      if (stack != null) 'stack': stack,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ErrorLogCompanion copyWith({
+    Value<String>? id,
+    Value<String>? occurredAt,
+    Value<String>? type,
+    Value<String?>? screen,
+    Value<String>? stack,
+    Value<int>? rowid,
+  }) {
+    return ErrorLogCompanion(
+      id: id ?? this.id,
+      occurredAt: occurredAt ?? this.occurredAt,
+      type: type ?? this.type,
+      screen: screen ?? this.screen,
+      stack: stack ?? this.stack,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (occurredAt.present) {
+      map['occurred_at'] = Variable<String>(occurredAt.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (screen.present) {
+      map['screen'] = Variable<String>(screen.value);
+    }
+    if (stack.present) {
+      map['stack'] = Variable<String>(stack.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ErrorLogCompanion(')
+          ..write('id: $id, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('type: $type, ')
+          ..write('screen: $screen, ')
+          ..write('stack: $stack, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $NichesTable niches = $NichesTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $AppUsageDaysTable appUsageDays = $AppUsageDaysTable(this);
+  late final $ErrorLogTable errorLog = $ErrorLogTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1559,6 +1919,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     niches,
     transactions,
     appUsageDays,
+    errorLog,
   ];
 }
 
@@ -2339,6 +2700,215 @@ typedef $$AppUsageDaysTableProcessedTableManager =
       AppUsageDay,
       PrefetchHooks Function()
     >;
+typedef $$ErrorLogTableCreateCompanionBuilder = ErrorLogCompanion Function({
+  required String id,
+  required String occurredAt,
+  required String type,
+  Value<String?> screen,
+  required String stack,
+  Value<int> rowid,
+});
+typedef $$ErrorLogTableUpdateCompanionBuilder = ErrorLogCompanion Function({
+  Value<String> id,
+  Value<String> occurredAt,
+  Value<String> type,
+  Value<String?> screen,
+  Value<String> stack,
+  Value<int> rowid,
+});
+
+class $$ErrorLogTableFilterComposer
+    extends Composer<_$AppDatabase, $ErrorLogTable> {
+  $$ErrorLogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get screen => $composableBuilder(
+    column: $table.screen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stack => $composableBuilder(
+    column: $table.stack,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ErrorLogTableOrderingComposer
+    extends Composer<_$AppDatabase, $ErrorLogTable> {
+  $$ErrorLogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get screen => $composableBuilder(
+    column: $table.screen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stack => $composableBuilder(
+    column: $table.stack,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ErrorLogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ErrorLogTable> {
+  $$ErrorLogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get screen =>
+      $composableBuilder(column: $table.screen, builder: (column) => column);
+
+  GeneratedColumn<String> get stack =>
+      $composableBuilder(column: $table.stack, builder: (column) => column);
+}
+
+class $$ErrorLogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ErrorLogTable,
+          ErrorLogData,
+          $$ErrorLogTableFilterComposer,
+          $$ErrorLogTableOrderingComposer,
+          $$ErrorLogTableAnnotationComposer,
+          $$ErrorLogTableCreateCompanionBuilder,
+          $$ErrorLogTableUpdateCompanionBuilder,
+          (
+            ErrorLogData,
+            BaseReferences<_$AppDatabase, $ErrorLogTable, ErrorLogData>,
+          ),
+          ErrorLogData,
+          PrefetchHooks Function()
+        > {
+  $$ErrorLogTableTableManager(_$AppDatabase db, $ErrorLogTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ErrorLogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ErrorLogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ErrorLogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> occurredAt = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> screen = const Value.absent(),
+                Value<String> stack = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ErrorLogCompanion(
+                id: id,
+                occurredAt: occurredAt,
+                type: type,
+                screen: screen,
+                stack: stack,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String occurredAt,
+                required String type,
+                Value<String?> screen = const Value.absent(),
+                required String stack,
+                Value<int> rowid = const Value.absent(),
+              }) => ErrorLogCompanion.insert(
+                id: id,
+                occurredAt: occurredAt,
+                type: type,
+                screen: screen,
+                stack: stack,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ErrorLogTable, ErrorLogData>(table),
+                  BaseReferences<_$AppDatabase, $ErrorLogTable, ErrorLogData>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ErrorLogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ErrorLogTable,
+      ErrorLogData,
+      $$ErrorLogTableFilterComposer,
+      $$ErrorLogTableOrderingComposer,
+      $$ErrorLogTableAnnotationComposer,
+      $$ErrorLogTableCreateCompanionBuilder,
+      $$ErrorLogTableUpdateCompanionBuilder,
+      (
+        ErrorLogData,
+        BaseReferences<_$AppDatabase, $ErrorLogTable, ErrorLogData>,
+      ),
+      ErrorLogData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2349,4 +2919,6 @@ class $AppDatabaseManager {
       $$TransactionsTableTableManager(_db, _db.transactions);
   $$AppUsageDaysTableTableManager get appUsageDays =>
       $$AppUsageDaysTableTableManager(_db, _db.appUsageDays);
+  $$ErrorLogTableTableManager get errorLog =>
+      $$ErrorLogTableTableManager(_db, _db.errorLog);
 }
