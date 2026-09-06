@@ -207,4 +207,79 @@ void main() {
       expect(rows, hasLength(1));
     });
   });
+
+  group('debts, debt_installments — T-26', () {
+    late AppDatabase db;
+
+    setUp(() => db = _openTestDatabase());
+    tearDown(() => db.close());
+
+    Future<void> insertDebt() => db.customStatement(
+      "INSERT INTO debts (id, name, total_cents, installment_count, "
+      "installment_cents, first_due_on, created_at) VALUES ('d1', "
+      "'Cartão', 120000, 12, 10000, '2026-10-05', '2026-09-05');",
+    );
+
+    test('debts existe com as 9 colunas da seção 5.3', () async {
+      await db.customStatement(
+        'SELECT id, name, creditor, total_cents, installment_count, '
+        'installment_cents, first_due_on, settled_at, created_at FROM debts;',
+      );
+    });
+
+    test('UNIQUE (debt_id, number) rejeita parcela duplicada', () async {
+      await insertDebt();
+      await db.customStatement(
+        "INSERT INTO debt_installments (id, debt_id, number, due_on, "
+        "amount_cents) VALUES ('p1', 'd1', 1, '2026-10-05', 10000);",
+      );
+      await expectLater(
+        db.customStatement(
+          "INSERT INTO debt_installments (id, debt_id, number, due_on, "
+          "amount_cents) VALUES ('p2', 'd1', 1, '2026-11-05', 10000);",
+        ),
+        throwsException,
+      );
+    });
+
+    test('a mesma parcela number em dívidas diferentes é permitida', () async {
+      await insertDebt();
+      await db.customStatement(
+        "INSERT INTO debts (id, name, total_cents, installment_count, "
+        "installment_cents, first_due_on, created_at) VALUES ('d2', "
+        "'Empréstimo', 60000, 6, 10000, '2026-10-10', '2026-09-05');",
+      );
+      await db.customStatement(
+        "INSERT INTO debt_installments (id, debt_id, number, due_on, "
+        "amount_cents) VALUES ('p1', 'd1', 1, '2026-10-05', 10000);",
+      );
+      await db.customStatement(
+        "INSERT INTO debt_installments (id, debt_id, number, due_on, "
+        "amount_cents) VALUES ('p2', 'd2', 1, '2026-10-10', 10000);",
+      );
+      final rows = await db
+          .customSelect('SELECT * FROM debt_installments;')
+          .get();
+      expect(rows, hasLength(2));
+    });
+
+    test(
+      'transactions.debt_installment_id referencia debt_installments',
+      () async {
+        await insertDebt();
+        await db.customStatement(
+          "INSERT INTO debt_installments (id, debt_id, number, due_on, "
+          "amount_cents) VALUES ('p1', 'd1', 1, '2026-10-05', 10000);",
+        );
+        await db.customStatement(
+          "INSERT INTO transactions (id, kind, amount_cents, occurred_on, "
+          "debt_installment_id, created_at, updated_at) VALUES ('t1', "
+          "'debt_payment', 10000, '2026-10-05', 'p1', "
+          "'2026-10-05T00:00:00', '2026-10-05T00:00:00');",
+        );
+        final rows = await db.customSelect('SELECT * FROM transactions;').get();
+        expect(rows, hasLength(1));
+      },
+    );
+  });
 }

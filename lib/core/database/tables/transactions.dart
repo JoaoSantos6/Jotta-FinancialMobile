@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'debt_installments.dart';
 import 'income_sources.dart';
 import 'investments.dart';
 
@@ -11,9 +12,6 @@ import 'investments.dart';
 /// `YYYY-MM-DD`, hora local — nunca `DateTimeColumn`, que o Drift persistiria
 /// como timestamp e reintroduziria fuso onde não existe fuso.
 ///
-/// A referência a `debt_installments` ganha `.references(...)` quando essa
-/// tabela existir (T-26) — não dá para referenciar uma tabela que ainda não
-/// está na lista do `@DriftDatabase`.
 class Transactions extends Table {
   TextColumn get id => text()();
 
@@ -41,8 +39,10 @@ class Transactions extends Table {
       .references(IncomeSources, #id)();
   TextColumn get investmentId =>
       text().named('investment_id').nullable().references(Investments, #id)();
-  TextColumn get debtInstallmentId =>
-      text().named('debt_installment_id').nullable()();
+  TextColumn get debtInstallmentId => text()
+      .named('debt_installment_id')
+      .nullable()
+      .references(DebtInstallments, #id)();
 
   /// null | 'monthly'.
   TextColumn get recurrence => text().nullable()();
