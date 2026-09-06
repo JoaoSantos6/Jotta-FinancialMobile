@@ -6,7 +6,7 @@
 | Marco | **M0** do roadmap (seção 8 do [PRD guarda-chuva](../PRD-MVP.md)) |
 | Versão | 1.0 |
 | Data | 2026-09-05 |
-| Status | Aprovado — v1.1, após a auditoria de 2026-09-05 |
+| Status | **Em execução** — v1.1, aprovado após a auditoria de 2026-09-05; as 51 tasks de `TASK.md` foram implementadas em 2026-09-06, pendente apenas confirmação em CI real (Android SDK indisponível no ambiente de implementação) e o checklist manual em aparelho |
 | Estimativa | 1,5 semana (um desenvolvedor) |
 | Depende de | nada |
 

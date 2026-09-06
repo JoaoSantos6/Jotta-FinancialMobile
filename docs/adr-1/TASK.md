@@ -17,57 +17,69 @@ passa depois. A coluna `V-xx` liga a task à tabela de testes da seção 8 da SP
 
 | # | Task | Tipo de teste | V | Status |
 |---|---|---|---|---|
-| T-01 | Projeto Flutter, `applicationId`, `minSdk` | config | V-01 | [ ] |
-| T-02 | Manifest sem permissões e sem Auto Backup | config | V-02 | [ ] |
-| T-03 | Regras de extração de dados | config | V-03 | [ ] |
-| T-04 | `pubspec.yaml` com versões exatas | config | V-04 | [ ] |
-| T-05 | Lint e formatação | comando | V-41 | [ ] |
-| T-06 | Estrutura de pastas e trava de camadas | arquitetura | V-05 | [ ] |
-| T-07 | `Result<T, F>` | unidade | V-40 | [ ] |
-| T-08 | `DatabaseKey`: geração e validação | unidade | V-06, V-08 | [ ] |
-| T-09 | `DatabaseKey.toString()` redigido | unidade | V-07 | [ ] |
-| T-10 | `DatabaseKeyStore.getOrCreate()` | unidade | V-09 | [ ] |
-| T-11 | Chave corrompida vira `KeyCorrupted` | unidade | V-10 | [ ] |
-| T-12 | `DatabaseKeyStore.destroy()` | unidade | V-11 | [ ] |
-| T-13 | `EncryptedSharedPreferences` ligado | unidade | V-12 | [ ] |
-| T-14 | SQLCipher carregado e ativo | integração | V-13 | [ ] |
-| T-15 | `openEncryptedDatabase` e `SqlCipherUnavailable` | integração | V-14 | [ ] |
-| T-16 | Round-trip com a chave certa | integração | V-15 | [ ] |
-| T-17 | Abertura sem chave falha | integração | V-16 | [ ] |
-| T-18 | Abertura com chave errada falha | integração | V-17 | [ ] |
-| T-19 | Dado não aparece nos bytes do arquivo | integração | V-18 | [ ] |
-| T-20 | `AppDatabase` e tabela `niches` | integração | V-19 | [ ] |
-| T-21 | Tabela `transactions` com `CHECK` | integração | V-20 | [ ] |
-| T-22 | Coluna `description_norm` e índice de busca | integração | V-45, V-46 | [ ] |
-| T-23 | Tabela `app_usage_days` | integração | V-47 | [ ] |
-| T-24 | Tabela `error_log` sem coluna sensível | integração | V-48 | [ ] |
-| T-25 | Tabelas de renda e investimento | integração | V-19 | [ ] |
-| T-26 | Tabelas de dívida com `UNIQUE` | integração | V-21 | [ ] |
-| T-27 | `app_settings` e fechamento do schema | integração | V-19 | [ ] |
-| T-28 | Índices parciais | integração | V-22 | [ ] |
-| T-29 | `foreign_keys = ON` | integração | V-23 | [ ] |
-| T-30 | `onUpgrade` que se recusa a adivinhar | integração | V-24 | [ ] |
-| T-31 | Golden do schema v1 | golden | V-25 | [ ] |
-| T-32 | Seed dos 7 nichos | integração | V-26 | [ ] |
-| T-33 | Distribuição de `kind` dos nichos | integração | V-27 | [ ] |
-| T-34 | Seed idempotente | integração | V-28 | [ ] |
-| T-35 | Localização do arquivo do banco | unidade | V-43 | [ ] |
-| T-36 | Providers do banco | unidade | V-42 | [ ] |
-| T-37 | `BootstrapGate` e `main.dart` | widget | V-29 | [ ] |
-| T-38 | `debugPrint` no-op em release | unidade | V-44 | [ ] |
-| T-39 | Tela de falha que não vaza | widget | V-30 | [ ] |
-| T-40 | Tema Material 3 com cor dinâmica | widget | V-31 | [ ] |
-| T-41 | Rotas e telas vazias | widget | V-32 | [ ] |
-| T-42 | Bottom nav e FAB persistente | widget | V-33 | [ ] |
-| T-43 | Alvos de toque ≥ 48dp | widget | V-34 | [ ] |
-| T-44 | `libsqlcipher` no runner | script CI | V-13–V-18 | [ ] |
-| T-45 | Workflow de CI base | script CI | V-41 | [ ] |
-| T-46 | Build do APK debug na CI | script CI | — | [ ] |
-| T-47 | Trava: sem `INTERNET` no APK | script CI | V-35 | [ ] |
-| T-48 | Trava: `allowBackup="false"` no APK | script CI | V-36 | [ ] |
-| T-49 | Trava: baseline de permissões | script CI | V-37 | [ ] |
-| T-50 | Trava: log de valor monetário | script CI | V-38 | [ ] |
-| T-51 | Trava: material da chave no código | script CI | V-39 | [ ] |
+| T-01 | Projeto Flutter, `applicationId`, `minSdk` | config | V-01 | [x] |
+| T-02 | Manifest sem permissões e sem Auto Backup | config | V-02 | [x] |
+| T-03 | Regras de extração de dados | config | V-03 | [x] |
+| T-04 | `pubspec.yaml` com versões exatas | config | V-04 | [x] |
+| T-05 | Lint e formatação | comando | V-41 | [x] |
+| T-06 | Estrutura de pastas e trava de camadas | arquitetura | V-05 | [x] |
+| T-07 | `Result<T, F>` | unidade | V-40 | [x] |
+| T-08 | `DatabaseKey`: geração e validação | unidade | V-06, V-08 | [x] |
+| T-09 | `DatabaseKey.toString()` redigido | unidade | V-07 | [x] |
+| T-10 | `DatabaseKeyStore.getOrCreate()` | unidade | V-09 | [x] |
+| T-11 | Chave corrompida vira `KeyCorrupted` | unidade | V-10 | [x] |
+| T-12 | `DatabaseKeyStore.destroy()` | unidade | V-11 | [x] |
+| T-13 | `EncryptedSharedPreferences` ligado | unidade | V-12 | [x] |
+| T-14 | SQLCipher carregado e ativo | integração | V-13 | [x] |
+| T-15 | `openEncryptedDatabase` e `SqlCipherUnavailable` | integração | V-14 | [x] |
+| T-16 | Round-trip com a chave certa | integração | V-15 | [x] |
+| T-17 | Abertura sem chave falha | integração | V-16 | [x] |
+| T-18 | Abertura com chave errada falha | integração | V-17 | [x] |
+| T-19 | Dado não aparece nos bytes do arquivo | integração | V-18 | [x] |
+| T-20 | `AppDatabase` e tabela `niches` | integração | V-19 | [x] |
+| T-21 | Tabela `transactions` com `CHECK` | integração | V-20 | [x] |
+| T-22 | Coluna `description_norm` e índice de busca | integração | V-45, V-46 | [x] |
+| T-23 | Tabela `app_usage_days` | integração | V-47 | [x] |
+| T-24 | Tabela `error_log` sem coluna sensível | integração | V-48 | [x] |
+| T-25 | Tabelas de renda e investimento | integração | V-19 | [x] |
+| T-26 | Tabelas de dívida com `UNIQUE` | integração | V-21 | [x] |
+| T-27 | `app_settings` e fechamento do schema | integração | V-19 | [x] |
+| T-28 | Índices parciais | integração | V-22 | [x] |
+| T-29 | `foreign_keys = ON` | integração | V-23 | [x] |
+| T-30 | `onUpgrade` que se recusa a adivinhar | integração | V-24 | [x] |
+| T-31 | Golden do schema v1 | golden | V-25 | [x] |
+| T-32 | Seed dos 7 nichos | integração | V-26 | [x] |
+| T-33 | Distribuição de `kind` dos nichos | integração | V-27 | [x] |
+| T-34 | Seed idempotente | integração | V-28 | [x] |
+| T-35 | Localização do arquivo do banco | unidade | V-43 | [x] |
+| T-36 | Providers do banco | unidade | V-42 | [x] |
+| T-37 | `BootstrapGate` e `main.dart` | widget | V-29 | [x] |
+| T-38 | `debugPrint` no-op em release | unidade | V-44 | [x] |
+| T-39 | Tela de falha que não vaza | widget | V-30 | [x] |
+| T-40 | Tema Material 3 com cor dinâmica | widget | V-31 | [x] |
+| T-41 | Rotas e telas vazias | widget | V-32 | [x] |
+| T-42 | Bottom nav e FAB persistente | widget | V-33 | [x] |
+| T-43 | Alvos de toque ≥ 48dp | widget | V-34 | [x] |
+| T-44 | `libsqlcipher` no runner | script CI | V-13–V-18 | [x] |
+| T-45 | Workflow de CI base | script CI | V-41 | [x] |
+| T-46 | Build do APK debug na CI | script CI | — | [~] |
+| T-47 | Trava: sem `INTERNET` no APK | script CI | V-35 | [~] |
+| T-48 | Trava: `allowBackup="false"` no APK | script CI | V-36 | [~] |
+| T-49 | Trava: baseline de permissões | script CI | V-37 | [~] |
+| T-50 | Trava: log de valor monetário | script CI | V-38 | [x] |
+| T-51 | Trava: material da chave no código | script CI | V-39 | [x] |
+
+**Legenda:** `[x]` = a validação da task rodou de verdade e passou (na maioria, `flutter
+test` no ambiente de implementação; T-05, T-45, T-50, T-51 incluem a demonstração de
+falha exigida, com a violação injetada e revertida). `[~]` = a lógica foi escrita e
+verificada por simulação (T-47–T-49: `aapt2` falso reproduzindo os 5 cenários do
+script), mas a validação **literal da task** — "o job/script na CI" — exige Android SDK
+e um APK real, indisponíveis neste ambiente (egress bloqueia `dl.google.com`; os
+pacotes `android-sdk-*` do apt vão só até a API 23). T-44 e T-45 ficam `[x]` porque os
+comandos que o job roda (`flutter analyze`, `dart format`, `flutter test --coverage`,
+a instalação do `libsqlcipher`) foram executados de verdade neste ambiente — só a
+execução *dentro do runner do Actions* não foi observada. A confirmação de T-46–T-49
+acontece no primeiro push deste branch com o Actions habilitado; ver `docs/DECISIONS.md`.
 
 ---
 

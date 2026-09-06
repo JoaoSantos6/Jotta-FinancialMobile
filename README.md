@@ -41,15 +41,26 @@ Detalhes, modelo de ameaças e testes: **seção 6 do PRD**.
 
 ## Estado
 
-📋 Fase de especificação. Nenhum código ainda. O **[`adr-1`](docs/adr-1/)** (marco M0)
-está documentado de ponta a ponta — PRD, spec técnica e 51 tasks numeradas: projeto
-Flutter, banco cifrado, chave no Keystore, casca navegável e CI com as travas de
-segurança.
+🚧 **`adr-1` (marco M0) implementado: as 51 tasks fechadas, 95 testes passando.**
+Projeto Flutter (`com.jotta.financial`), banco Drift sobre SQLCipher (chave no Android
+Keystore, prova automatizada de cifra real), schema v1 completo (10 tabelas, seed dos 7
+nichos), casca navegável (bottom nav + FAB, Material 3 com cor dinâmica) e CI com as
+5 travas de segurança.
 
-Ele passou pelo `/judge`, voltou **VIÁVEL COM RESSALVAS**, e as ressalvas foram
-tratadas: correções factuais aplicadas e as duas aberturas de produto fechadas. O
+Ele passou pelo `/judge` antes de codar, voltou **VIÁVEL COM RESSALVAS**, e as ressalvas
+foram tratadas: correções factuais aplicadas e as duas aberturas de produto fechadas. O
 schema v1 cresceu de 8 para 10 tabelas no processo — a auditoria mostrou que requisitos
 já aprovados exigiam dados que o modelo não guardava.
+
+**O que falta para o M0 fechar de fato:** o ambiente de implementação não tem Android
+SDK (rede bloqueada para `dl.google.com`), então o build do APK e as travas de CI que
+leem o manifest *merged* (T-46 a T-49) foram validadas por simulação, não contra um APK
+real — isso só se confirma quando este branch roda no Actions do GitHub, com SDK e rede
+completos no runner. Falta também o checklist manual em aparelho físico que o próprio
+ADR exige (seção 8, item 5 da definição de pronto): instalar o APK, extrair `jotta.db`
+via `adb` e confirmar que `sqlite3`/`strings` não leem nada. Detalhes em
+[`docs/adr-1/TASK.md`](docs/adr-1/TASK.md) (legenda no fim da tabela de progresso) e
+[`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Como uma solução vira código
 
